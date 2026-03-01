@@ -141,7 +141,10 @@ client = True if ai_providers.is_ai_available() else None
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt"""
+    """Hash a password using bcrypt (with truncation for passlib+bcrypt compat)"""
+    # bcrypt truncates to 72 bytes, but passlib 1.7.4 + newer bcrypt crashes if we don't truncate first
+    if len(password.encode('utf-8')) > 72:
+        password = password.encode('utf-8')[:72].decode('utf-8', 'ignore')
     return pwd_context.hash(password)
 
 def verify_password(password: str, hashed: str) -> bool:
