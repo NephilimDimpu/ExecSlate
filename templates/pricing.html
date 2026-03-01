@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExecSlate — Pricing</title>
+  <meta name="description" content="Simple, transparent pricing for ExecSlate executive report generation.">
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='dark-theme.css') }}">
+  <script>
+    if (localStorage.getItem('theme') === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  </script>
+</head>
+
+<body>
+  <div class="pricing-container">
+
+    <!-- ================= HERO ================= -->
+    <div class="pricing-hero">
+      <h1>Simple, Honest Pricing</h1>
+      <p class="subtitle">
+        No hidden fees. No fake features. Pay only for what you use.
+      </p>
+    </div>
+
+    <!-- ================= PRICING GRID ================= -->
+    <div class="pricing-grid-elite">
+
+      <!-- ================= FREE ================= -->
+      <div class="plan-card-elite">
+
+        <h2>Starter</h2>
+        <p class="plan-tag">Try it out</p>
+
+        <div class="price">
+          $0
+          <span>forever</span>
+        </div>
+
+        <p class="value-line">
+          Perfect for evaluating ExecSlate with your own data.
+        </p>
+
+        <ul class="feature-list">
+          <li>3 CSV uploads</li>
+          <li>Statistical executive insights</li>
+          <li>1 AI-enhanced analysis</li>
+          <li>PDF export</li>
+          <li>Word export</li>
+          <li class="disabled">PowerPoint export</li>
+          <li class="disabled">AI regenerations</li>
+        </ul>
+
+        <a href="/register" class="btn-primary">Start Free</a>
+
+      </div>
+
+      <!-- ================= PRO ================= -->
+      <div class="plan-card-elite highlight">
+
+        <div class="most-popular">Most Popular</div>
+
+        <h2>Professional</h2>
+        <p class="plan-tag">For Analysts &amp; Consultants</p>
+
+        <div class="price">
+          $49
+          <span>/ month</span>
+        </div>
+
+        <p class="value-line strong">
+          Replaces 10–30 hours of manual reporting every month.
+        </p>
+
+        <ul class="feature-list">
+          <li>20 CSV uploads / month</li>
+          <li>10 AI-enhanced analyses</li>
+          <li>5 AI regeneration cycles</li>
+          <li>PDF, Word &amp; PowerPoint export</li>
+          <li>Professional charts &amp; visuals</li>
+          <li>Statistical + AI hybrid intelligence</li>
+        </ul>
+
+        {% if user and user.plan not in ['demo', none] %}
+        <button class="btn-primary" id="upgradePro" onclick="handleUpgrade('pro')">
+          Upgrade to Pro — $49/mo
+        </button>
+        {% else %}
+        <a href="/register?plan=pro" class="btn-primary" style="display:block; text-align:center;">
+          Upgrade to Pro — $49/mo
+        </a>
+        {% endif %}
+
+      </div>
+
+      <!-- ================= BUSINESS ================= -->
+      <div class="plan-card-elite">
+
+        <h2>Business</h2>
+        <p class="plan-tag">For Power Users</p>
+
+        <div class="price">
+          $99
+          <span>/ month</span>
+        </div>
+
+        <p class="value-line">
+          Zero limits. Generate as many reports as your business needs.
+        </p>
+
+        <ul class="feature-list">
+          <li><strong>Unlimited</strong> CSV uploads</li>
+          <li><strong>Unlimited</strong> AI-enhanced analyses</li>
+          <li><strong>Unlimited</strong> AI regenerations</li>
+          <li>All export formats</li>
+          <li>Everything in Pro, uncapped</li>
+        </ul>
+
+        {% if user and user.plan not in ['demo', none] %}
+        <button class="btn-primary" id="upgradeBusiness" onclick="handleUpgrade('business')">
+          Go Business — $99/mo
+        </button>
+        {% else %}
+        <a href="/register?plan=business" class="btn-primary" style="display:block; text-align:center;">
+          Go Business — $99/mo
+        </a>
+        {% endif %}
+
+      </div>
+
+    </div>
+
+    <!-- ================= VALUE PROOF ================= -->
+    <div class="value-proof">
+
+      <h2>Why Teams Choose ExecSlate</h2>
+
+      <div class="value-grid">
+
+        <div class="value-card">
+          <h3>Decision Confidence</h3>
+          <p>
+            Transform raw operational data into executive-grade narratives
+            suitable for boardrooms, investors, and strategy teams.
+          </p>
+        </div>
+
+        <div class="value-card">
+          <h3>Time Compression</h3>
+          <p>
+            Replace multi-hour manual analysis cycles with automated,
+            presentation-ready outputs in seconds.
+          </p>
+        </div>
+
+        <div class="value-card">
+          <h3>Reliability by Design</h3>
+          <p>
+            Dual-mode intelligence ensures reports generate even when
+            AI limits are reached — statistical fallback always works.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ================= COMPARISON TABLE ================= -->
+    <div class="comparison-section">
+
+      <h2>Plan Comparison</h2>
+
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th>Starter</th>
+            <th>Professional</th>
+            <th>Business</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr>
+            <td>CSV Uploads</td>
+            <td>3</td>
+            <td>20 / month</td>
+            <td>Unlimited</td>
+          </tr>
+
+          <tr>
+            <td>AI-Enhanced Insights</td>
+            <td>1 (try it)</td>
+            <td>10 / month</td>
+            <td>Unlimited</td>
+          </tr>
+
+          <tr>
+            <td>AI Regenerations</td>
+            <td>—</td>
+            <td>5 / month</td>
+            <td>Unlimited</td>
+          </tr>
+
+          <tr>
+            <td>Statistical Insights</td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>✔</td>
+          </tr>
+
+          <tr>
+            <td>PDF Export</td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>✔</td>
+          </tr>
+
+          <tr>
+            <td>Word Export</td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>✔</td>
+          </tr>
+
+          <tr>
+            <td>PowerPoint Export</td>
+            <td>—</td>
+            <td>✔</td>
+            <td>✔</td>
+          </tr>
+
+        </tbody>
+      </table>
+
+    </div>
+
+    <!-- ================= FOOTER CTA ================= -->
+    <div class="final-cta">
+
+      <h2>Start generating executive reports today</h2>
+
+      <p>
+        No credit card required. Upgrade anytime.
+      </p>
+
+      <a href="/register" class="btn-primary big">
+        Create Free Account →
+      </a>
+
+    </div>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="pricing-footer">
+      © 2026 ExecSlate — Executive Intelligence Platform
+    </footer>
+
+  </div>
+
+  <!-- Theme Toggle -->
+  <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode">
+    <span id="themeIcon">🌙</span>
+  </button>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="{{ url_for('static', path='theme.js') }}"></script>
+  <script src="{{ url_for('static', path='toast.js') }}"></script>
+
+  <script>
+    async function handleUpgrade(plan) {
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+
+      try {
+        // Create order on backend
+        const formData = new FormData();
+        formData.append('plan', plan);
+
+        const res = await fetch('/payment/create-order', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          // Not logged in or demo user → redirect to plan-specific signup
+          if (res.status === 401) {
+            window.location.href = '/register?plan=' + plan;
+            return;
+          }
+          throw new Error(err.detail || 'Could not create order');
+        }
+
+        const order = await res.json();
+
+        // Open Razorpay checkout
+        const options = {
+          key: order.key_id,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'ExecSlate',
+          description: order.description,
+          order_id: order.order_id,
+          prefill: {
+            email: order.email
+          },
+          theme: {
+            color: '#00c896'
+          },
+          handler: async function (response) {
+            // Verify payment on backend
+            const verifyData = new FormData();
+            verifyData.append('razorpay_order_id', response.razorpay_order_id);
+            verifyData.append('razorpay_payment_id', response.razorpay_payment_id);
+            verifyData.append('razorpay_signature', response.razorpay_signature);
+            verifyData.append('plan', plan);
+
+            const verifyRes = await fetch('/payment/verify', {
+              method: 'POST',
+              body: verifyData
+            });
+
+            if (verifyRes.ok) {
+              const result = await verifyRes.json();
+              if (typeof showToast === 'function') {
+                showToast('🎉 ' + result.message, 'success');
+              }
+              setTimeout(() => {
+                window.location.href = '/';
+              }, 2000);
+            } else {
+              if (typeof showToast === 'function') {
+                showToast('Payment received but verification failed. Contact support.', 'error');
+              }
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              btn.disabled = false;
+              btn.textContent = originalText;
+            }
+          }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+          btn.disabled = false;
+          btn.textContent = originalText;
+          if (typeof showToast === 'function') {
+            showToast('Payment failed: ' + response.error.description, 'error');
+          }
+        });
+        rzp.open();
+
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        if (typeof showToast === 'function') {
+          showToast(err.message || 'Something went wrong', 'error');
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>

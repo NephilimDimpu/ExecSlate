@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExecSlate — Login</title>
+  <meta name="description" content="Sign in to your ExecSlate account to generate executive-ready reports.">
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='dark-theme.css') }}">
+  <script>
+    if (localStorage.getItem('theme') === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  </script>
+</head>
+
+<body>
+
+  <div class="login-container">
+    <div class="login-card fade-in">
+
+      <h1>Welcome Back</h1>
+      <p>Sign in to ExecSlate</p>
+
+      {% if error %}
+      <div class="error">
+        <strong>⚠️</strong> {{ error }}
+      </div>
+      {% endif %}
+
+      <form method="post" action="/login" class="login-form">
+        <div>
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="your@email.com" required autofocus>
+        </div>
+
+        <div>
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Enter your password" required>
+        </div>
+
+        <button type="submit" class="btn-primary large">Sign In</button>
+      </form>
+
+      <div class="login-demo-box">
+        <strong>Want to try it out?</strong>
+        <p>See how ExecSlate works instantly with our pre-populated demo account.</p>
+        <a href="/demo" class="btn-secondary">
+          View Demo Account
+        </a>
+      </div>
+
+      <div class="login-link-row">
+        Don't have an account? <a href="/register">Sign Up Free</a>
+      </div>
+
+      <div class="back-link">
+        <a href="/">← Back to Home</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Theme Toggle -->
+  <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode">
+    <span id="themeIcon">🌙</span>
+  </button>
+
+  <script src="{{ url_for('static', path='theme.js') }}"></script>
+  <script src="{{ url_for('static', path='toast.js') }}"></script>
+</body>
+
+</html>

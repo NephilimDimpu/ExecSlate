@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExecSlate — Control Tower</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='dark-theme.css') }}">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+</head>
+
+<body>
+    <div class="admin-elite-container">
+
+        <!-- ================= TOP NAV ================= -->
+        <header class="admin-top">
+
+            <div>
+                <h1>ExecSlate Control Tower</h1>
+                <p class="admin-sub">Platform Intelligence & Operational Oversight</p>
+            </div>
+
+            <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+
+            <div class="admin-nav-right" id="navRight">
+                <a href="/" class="btn-admin">← Back to App</a>
+            </div>
+
+        </header>
+
+        <!-- ================= GLOBAL HEALTH ================= -->
+        <section class="health-grid">
+
+            <div class="health-card">
+                <h4>Total Users</h4>
+                <p class="big">{{ total_users }}</p>
+            </div>
+
+            <div class="health-card">
+                <h4>Free Users</h4>
+                <p class="big">{{ free_users }}</p>
+            </div>
+
+            <div class="health-card">
+                <h4>Pro Users</h4>
+                <p class="big">{{ pro_users }}</p>
+            </div>
+
+            <div class="health-card"
+                style="background: linear-gradient(135deg, #ede9fe, #c4b5fd); border-color: rgba(139,92,246,0.3);">
+                <h4 style="color: #5b21b6;">Business Users</h4>
+                <p class="big" style="color: #3b0764;">{{ business_users }}</p>
+            </div>
+
+            <div class="health-card highlight">
+                <h4>Total Projects</h4>
+                <p class="big">{{ all_projects | length }}</p>
+            </div>
+
+        </section>
+
+        <!-- ================= PLATFORM INTELLIGENCE ================= -->
+        <section class="intel-section">
+
+            <h2>Platform Intelligence</h2>
+
+            <div class="intel-grid">
+
+                <div class="intel-card">
+                    <h3>User Distribution</h3>
+                    <p>
+                        Free → {{ free_users }}
+                        <br>
+                        Pro → {{ pro_users }}
+                        <br>
+                        Business → {{ business_users }}
+                    </p>
+                </div>
+
+                <div class="intel-card">
+                    <h3>Adoption Signal</h3>
+                    <p>
+                        Pro Conversion Ratio:
+                        <br>
+                        <strong>
+                            {{ ((pro_users / total_users) * 100) | int if total_users > 0 else 0 }}%
+                        </strong>
+                    </p>
+                </div>
+
+                <div class="intel-card">
+                    <h3>Platform Load</h3>
+                    <p>
+                        Total Projects:
+                        <strong>{{ all_projects | length }}</strong>
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ================= USER CONTROL ================= -->
+        <section class="admin-table-section">
+
+            <h2>User Command Layer</h2>
+
+            <table class="admin-table">
+
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Plan</th>
+                        <th>Uploads</th>
+                        <th>AI Usage</th>
+                        <th>AI Regens</th>
+                        <th>Projects</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for user in user_data %}
+                    <tr>
+
+                        <td>
+                            <strong>{{ user.email }}</strong>
+                        </td>
+
+                        <td>
+                            <span class="plan-badge plan-{{ user.plan }}">
+                                {{ user.plan }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {{ user.uploads_used }}
+                            {% set limit = PLAN_LIMITS[user.plan].max_uploads %}
+                            {% if limit %}
+                            / {{ limit }}
+                            {% else %}
+                            ∞
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ user.ai_used }}
+                            {% set ai_limit = PLAN_LIMITS[user.plan].max_ai_generations %}
+                            {% if ai_limit %}
+                            / {{ ai_limit }}
+                            {% else %}
+                            ∞
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ user.ai_regens }}
+                            {% set regen_limit = PLAN_LIMITS[user.plan].max_ai_regens %}
+                            {% if regen_limit %}
+                            / {{ regen_limit }}
+                            {% else %}
+                            ∞
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ user.project_count }}
+                        </td>
+
+                        <td>
+
+                            {% if user.plan == "free" %}
+                            <form method="post" action="/admin/plan/{{ user.email }}" style="display:inline;">
+                                <input type="hidden" name="plan" value="pro">
+                                <input type="hidden" name="admin" value="1">
+                                <button class="btn-upgrade">→ Pro</button>
+                            </form>
+                            {% elif user.plan == "pro" %}
+                            <form method="post" action="/admin/plan/{{ user.email }}" style="display:inline;">
+                                <input type="hidden" name="plan" value="business">
+                                <input type="hidden" name="admin" value="1">
+                                <button class="btn-upgrade" style="background: #7c3aed;">→ Business</button>
+                            </form>
+                            <form method="post" action="/admin/plan/{{ user.email }}" style="display:inline;">
+                                <input type="hidden" name="plan" value="free">
+                                <input type="hidden" name="admin" value="1">
+                                <button class="btn-downgrade">→ Free</button>
+                            </form>
+                            {% elif user.plan == "business" %}
+                            <form method="post" action="/admin/plan/{{ user.email }}" style="display:inline;">
+                                <input type="hidden" name="plan" value="pro">
+                                <input type="hidden" name="admin" value="1">
+                                <button class="btn-downgrade">→ Pro</button>
+                            </form>
+                            <form method="post" action="/admin/plan/{{ user.email }}" style="display:inline;">
+                                <input type="hidden" name="plan" value="free">
+                                <input type="hidden" name="admin" value="1">
+                                <button class="btn-downgrade" style="background: #dc2626;">→ Free</button>
+                            </form>
+                            {% endif %}
+
+                            <form method="post" action="/admin/reset-usage/{{ user.email }}" style="display:inline;">
+                                <input type="hidden" name="admin" value="1">
+                                <button class="btn-reset">Reset</button>
+                            </form>
+
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+
+                </tbody>
+            </table>
+
+        </section>
+
+        <!-- ================= PROJECT COMMAND ================= -->
+        <section class="admin-table-section">
+
+            <h2>Project Intelligence Layer</h2>
+
+            <table class="admin-table">
+
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Client</th>
+                        <th>Owner</th>
+                        <th>Uploads</th>
+                        <th>AI Used</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for project in all_projects %}
+                    <tr>
+
+                        <td>#{{ project.id }}</td>
+                        <td><strong>{{ project.client }}</strong></td>
+                        <td>{{ project.user_email }}</td>
+                        <td>{{ project.uploads }}</td>
+
+                        <td>
+                            {% if project.ai_used %}
+                            AI
+                            {% else %}
+                            Statistical
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if project.get('generated') %}
+                            <span class="status-good">Generated</span>
+                            {% else %}
+                            <span class="status-warn">Pending</span>
+                            {% endif %}
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+
+                </tbody>
+            </table>
+
+        </section>
+
+        <!-- ================= FOOTER ================= -->
+        <footer class="admin-footer">
+            ExecSlate Control Tower • Internal Operations Interface
+        </footer>
+
+    </div>
+    <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode">
+        <span id="themeIcon">🌙</span>
+    </button>
+
+    <script src="{{ url_for('static', path='theme.js') }}"></script>
+    <script src="{{ url_for('static', path='toast.js') }}"></script>
+</body>
+
+</html>

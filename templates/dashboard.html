@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExecSlate — Command Center</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='dark-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='loading.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='demo-banner.css') }}">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class="dashboard-container fade-in">
+
+        <!-- ================= NAVBAR ================= -->
+        <header class="nav">
+
+            <div class="nav-inner">
+
+                <div class="nav-logo">ExecSlate</div>
+
+                <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+
+                <div class="nav-right" id="navRight">
+                    <span class="nav-user">{{ user.email }}</span>
+                    <span class="plan-badge plan-{{ user.plan }}">{{ user.plan | upper }}</span>
+
+                    {% if user.email == 'admin@execslate.com' %}
+                    <a href="/admin?admin=1" class="nav-link admin-link">Admin</a>
+                    {% endif %}
+
+                    <a href="/logout" class="nav-link">Logout</a>
+                </div>
+
+            </div>
+
+        </header>
+
+        <!-- ================= DEMO BANNER ================= -->
+        {% if user.plan == 'demo' %}
+        <div class="demo-banner">
+            <div class="demo-banner-content">
+                <span class="demo-icon">🔓</span>
+                <span class="demo-text">
+                    <strong>DEMO MODE</strong> — Your data won't be saved after logout.
+                </span>
+                <a href="/register" class="demo-cta">Sign Up Free to Save Your Work →</a>
+            </div>
+        </div>
+        {% endif %}
+
+
+        <!-- ================= PLAN INFO CARD ================= -->
+        <section class="plan-info-card">
+
+            <div class="plan-info-icon {{ user.plan }}">
+                {% if user.plan == 'business' %}👑
+                {% elif user.plan == 'pro' %}⚡
+                {% elif user.plan == 'demo' %}🔓
+                {% else %}🚀{% endif %}
+            </div>
+
+            <div class="plan-info-details">
+                <div class="plan-info-name">
+                    {% if user.plan == 'business' %}Business Plan
+                    {% elif user.plan == 'pro' %}Professional Plan
+                    {% elif user.plan == 'demo' %}Demo Mode
+                    {% else %}Starter Plan{% endif %}
+                    <span class="plan-badge plan-{{ user.plan }}">{{ user.plan | upper }}</span>
+                </div>
+                <div class="plan-info-desc">
+                    {% if user.plan == 'business' %}Unlimited uploads, unlimited AI, all export formats
+                    {% elif user.plan == 'pro' %}20 uploads/mo, 10 AI insights, all exports including PowerPoint
+                    {% elif user.plan == 'demo' %}1 upload trial — sign up to unlock more
+                    {% else %}3 uploads, 1 AI trial, PDF & Word exports{% endif %}
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ================= PAGE HERO ================= -->
+        <section class="dashboard-hero">
+
+            <h1>Executive Analytics Command Center</h1>
+            <p>
+                {% if user.plan == 'business' %}
+                Unlimited intelligence generation across your entire portfolio. No limits, no restrictions.
+                {% elif user.plan == 'pro' %}
+                Monitor data processing capacity, intelligence generation, and active engagements.
+                {% else %}
+                Upload your data and generate executive-ready intelligence. Upgrade anytime for more power.
+                {% endif %}
+            </p>
+
+        </section>
+
+
+        <!-- ================= USAGE PROGRESS BARS ================= -->
+        <section class="usage-progress-grid">
+
+            <!-- Uploads -->
+            <div class="usage-progress-item">
+                <div class="usage-progress-header">
+                    <span class="usage-progress-label">📂 Data Uploads</span>
+                    <span class="usage-progress-count">
+                        {{ stats.uploads_used }}
+                        {% if PLAN_LIMITS[user.plan].max_uploads %}
+                        / {{ PLAN_LIMITS[user.plan].max_uploads }}
+                        {% else %}
+                        / ∞
+                        {% endif %}
+                    </span>
+                </div>
+                {% if PLAN_LIMITS[user.plan].max_uploads %}
+                {% set upload_pct = (stats.uploads_used / PLAN_LIMITS[user.plan].max_uploads * 100) | int %}
+                <div class="usage-progress-bar">
+                    <div class="usage-progress-fill {% if upload_pct >= 90 %}red{% elif upload_pct >= 60 %}yellow{% else %}green{% endif %}"
+                        style="width: {{ upload_pct }}%"></div>
+                </div>
+                <div class="usage-progress-subtitle">
+                    {% if upload_pct >= 90 %}⚠️ Almost at limit
+                    {% elif upload_pct >= 60 %}{{ PLAN_LIMITS[user.plan].max_uploads - stats.uploads_used }} remaining
+                    {% else %}{{ PLAN_LIMITS[user.plan].max_uploads - stats.uploads_used }} remaining this month{% endif
+                    %}
+                </div>
+                {% else %}
+                <div class="usage-progress-bar">
+                    <div class="usage-progress-fill unlimited"></div>
+                </div>
+                <div class="usage-progress-subtitle">Unlimited — no restrictions</div>
+                {% endif %}
+            </div>
+
+            <!-- AI Generations -->
+            <div class="usage-progress-item">
+                <div class="usage-progress-header">
+                    <span class="usage-progress-label">✨ AI Generations</span>
+                    <span class="usage-progress-count">
+                        {{ stats.ai_generations_used }}
+                        {% if PLAN_LIMITS[user.plan].max_ai_generations %}
+                        / {{ PLAN_LIMITS[user.plan].max_ai_generations }}
+                        {% else %}
+                        / ∞
+                        {% endif %}
+                    </span>
+                </div>
+                {% if PLAN_LIMITS[user.plan].max_ai_generations %}
+                {% set ai_pct = (stats.ai_generations_used / PLAN_LIMITS[user.plan].max_ai_generations * 100) | int %}
+                <div class="usage-progress-bar">
+                    <div class="usage-progress-fill {% if ai_pct >= 90 %}red{% elif ai_pct >= 60 %}yellow{% else %}green{% endif %}"
+                        style="width: {{ ai_pct }}%"></div>
+                </div>
+                <div class="usage-progress-subtitle">
+                    {% if ai_pct >= 90 %}⚠️ Almost at limit
+                    {% else %}{{ PLAN_LIMITS[user.plan].max_ai_generations - stats.ai_generations_used }} remaining{%
+                    endif %}
+                </div>
+                {% else %}
+                <div class="usage-progress-bar">
+                    <div class="usage-progress-fill unlimited"></div>
+                </div>
+                <div class="usage-progress-subtitle">Unlimited — no restrictions</div>
+                {% endif %}
+            </div>
+
+            <!-- AI Regenerations -->
+            <div class="usage-progress-item">
+                <div class="usage-progress-header">
+                    <span class="usage-progress-label">🔄 AI Regenerations</span>
+                    <span class="usage-progress-count">
+                        {{ stats.ai_regens_used }}
+                        {% if PLAN_LIMITS[user.plan].max_ai_regens %}
+                        / {{ PLAN_LIMITS[user.plan].max_ai_regens }}
+                        {% elif PLAN_LIMITS[user.plan].max_ai_regens == 0 %}
+                        / 0
+                        {% else %}
+                        / ∞
+                        {% endif %}
+                    </span>
+                </div>
+                {% if PLAN_LIMITS[user.plan].max_ai_regens is not none and PLAN_LIMITS[user.plan].max_ai_regens > 0 %}
+                {% set regen_pct = (stats.ai_regens_used / PLAN_LIMITS[user.plan].max_ai_regens * 100) | int %}
+                <div class="usage-progress-bar">
+                    <div class="usage-progress-fill {% if regen_pct >= 90 %}red{% elif regen_pct >= 60 %}yellow{% else %}green{% endif %}"
+                        style="width: {{ regen_pct }}%"></div>
+                </div>
+                <div class="usage-progress-subtitle">
+                    {{ PLAN_LIMITS[user.plan].max_ai_regens - stats.ai_regens_used }} remaining
+                </div>
+                {% elif PLAN_LIMITS[user.plan].max_ai_regens == 0 %}
+                <div class="usage-progress-bar">
+                    <div class="usage-progress-fill red" style="width: 0%"></div>
+                </div>
+                <div class="usage-progress-subtitle">🔒 Upgrade to unlock regenerations</div>
+                {% else %}
+                <div class="usage-progress-bar">
+                    <div class="usage-progress-fill unlimited"></div>
+                </div>
+                <div class="usage-progress-subtitle">Unlimited — no restrictions</div>
+                {% endif %}
+            </div>
+
+        </section>
+
+
+        <!-- ================= TIER-AWARE UPGRADE CTA ================= -->
+        {% if user.plan == "free" or user.plan == "demo" %}
+        <section class="upgrade-cta-card to-pro">
+            <div class="upgrade-cta-content">
+                <h3>⚡ Unlock Professional Intelligence</h3>
+                <p>
+                    Get 20 uploads/month, 10 AI-enhanced analyses, PowerPoint exports, and 5 regeneration cycles.
+                    Replace 10–30 hours of manual reporting every month.
+                </p>
+                <div class="upgrade-cta-features">
+                    <span>📂 20 uploads</span>
+                    <span>✨ 10 AI analyses</span>
+                    <span>📊 PowerPoint</span>
+                    <span>🔄 5 regenerations</span>
+                </div>
+            </div>
+            <a href="/pricing" class="btn-upgrade-cta">
+                Upgrade to Pro — $49/mo →
+            </a>
+        </section>
+
+        {% elif user.plan == "pro" %}
+        <section class="upgrade-cta-card to-business">
+            <div class="upgrade-cta-content">
+                <h3>👑 Go Unlimited with Business</h3>
+                <p>
+                    Remove all usage limits. Unlimited uploads, unlimited AI-enhanced analyses,
+                    unlimited regenerations. Zero restrictions on your intelligence pipeline.
+                </p>
+                <div class="upgrade-cta-features">
+                    <span>📂 Unlimited uploads</span>
+                    <span>✨ Unlimited AI</span>
+                    <span>🔄 Unlimited regens</span>
+                </div>
+            </div>
+            <a href="/pricing" class="btn-upgrade-cta">
+                Go Business — $99/mo →
+            </a>
+        </section>
+
+        {% elif user.plan == "business" %}
+        <section class="upgrade-cta-card maxed-out">
+            <div class="upgrade-cta-content">
+                <h3>✅ You're on the Best Plan</h3>
+                <p>
+                    Unlimited everything. No limits, no restrictions. Generate as many reports as your business needs.
+                </p>
+            </div>
+        </section>
+        {% endif %}
+
+
+        <!-- ================= DATA SCHEMA ================= -->
+        <section class="card">
+
+            <h3>Data Requirements</h3>
+
+            <ul class="schema-list">
+                <li><b>Numeric columns</b> — auto-detected as KPIs (revenue, profit, margin, cost, units, etc.)</li>
+                <li><b>Text columns</b> — auto-detected as dimensions (region, category, product, etc.)</li>
+                <li>No required columns — works with <b>any structured CSV</b></li>
+                <li>Upload any business data and ExecSlate will figure out the rest</li>
+            </ul>
+
+        </section>
+
+
+        <!-- ================= PROJECT HEADER ================= -->
+        <section class="projects-header">
+
+            <h2>Active Engagements</h2>
+
+            <form action="/project/create" method="post">
+                <button class="btn-primary large">
+                    Create New Analysis
+                </button>
+            </form>
+
+        </section>
+
+
+        <!-- ================= PROJECT GRID ================= -->
+        {% if projects %}
+
+        <section class="project-grid stagger-children">
+
+            {% for project in projects %}
+
+            <a href="/report/{{ project.id }}" class="project-card elevate-on-hover">
+
+                <div class="project-title">{{ project.client }}</div>
+
+                <div class="project-meta">
+                    <div>{{ project.period }}</div>
+
+                    <div class="status-badge
+{% if project.generated %}status-ready{% else %}status-pending{% endif %}">
+                        {% if project.generated %}
+                        Analysis Ready
+                        {% else %}
+                        Awaiting Data
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="project-footer">
+                    <div>{{ project.uploads }} uploads</div>
+                    <div class="project-open">Open →</div>
+                </div>
+
+            </a>
+
+            {% endfor %}
+
+        </section>
+
+        {% else %}
+
+        <section class="empty-state card">
+
+            <h3>No Active Engagements</h3>
+            <p>
+                Create your first analysis to begin generating executive-ready intelligence.
+            </p>
+
+            <form action="/project/create" method="post">
+                <button class="btn-primary">
+                    Create First Analysis
+                </button>
+            </form>
+
+        </section>
+
+        {% endif %}
+
+
+    </div>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode">
+        <span id="themeIcon">🌙</span>
+    </button>
+
+    <script src="{{ url_for('static', path='theme.js') }}"></script>
+    <script src="{{ url_for('static', path='toast.js') }}"></script>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-title" id="loadingTitle">Uploading Data...</div>
+            <div class="loading-subtitle" id="loadingSubtitle">Securely processing your file</div>
+        </div>
+    </div>
+
+    <script>
+        // Loading State Logic
+        const uploadForm = document.querySelector('form[action="/project/create"]');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function (e) {
+                const overlay = document.getElementById('loadingOverlay');
+                const title = document.getElementById('loadingTitle');
+                const subtitle = document.getElementById('loadingSubtitle');
+
+                overlay.style.display = 'flex';
+
+                // Animation sequence
+                const steps = [
+                    { t: "Analyzing Data Structure...", s: "Detecting business metrics & dimensions" },
+                    { t: "Computing KPIs...", s: "Calculating trends, growth rates & segmentation" },
+                    { t: "Generating Executive Insights...", s: "Building strategic narrative & recommendations" },
+                    { t: "Finalizing Report...", s: "Preparing PDF, PowerPoint & Word exports" }
+                ];
+
+                let step = 0;
+                setInterval(() => {
+                    if (step < steps.length) {
+                        title.textContent = steps[step].t;
+                        subtitle.textContent = steps[step].s;
+                        step++;
+                    }
+                }, 1200); // Change every 1.2s
+            });
+        }
+    </script>
+</body>
+
+</html>

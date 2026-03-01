@@ -1,0 +1,271 @@
+/* ==================== DARK MODE OVERRIDES ==================== */
+[data-theme="dark"] {
+    /* 
+       INVERTED PALETTE:
+       Backgrounds become dark slate/navy
+       Text becomes off-white/gray
+       Borders become subtle white transparency
+    */
+
+    /* Text Colors (Inverted) */
+    --text-primary: #f1f5f9;
+    /* Slate 100 */
+    --text-secondary: #94a3b8;
+    /* Slate 400 */
+    --text-tertiary: #64748b;
+    /* Slate 500 */
+    --text-inverse: #0f172a;
+    /* Slate 900 (for buttons on dark bg) */
+
+    /* Surface Colors (Deep Slate) */
+    --surface-primary: #0f172a;
+    /* Slate 900 - Main Background */
+    --surface-secondary: #1e293b;
+    /* Slate 800 - Cards/Sidebar */
+    --surface-tertiary: #334155;
+    /* Slate 700 - Hover states */
+    --surface-elevated: #1e293b;
+    /* Slate 800 - Modals/Dropdowns */
+
+    /* Borders (White Transparency) */
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-default: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.20);
+    --border-focus: var(--accent);
+
+    /* Feature Colors (Adjusted for contrast) */
+    --ink: #f8fafc;
+    /* Main heading color -> White */
+    --ink-light: #e2e8f0;
+    /* Subheading -> Light Gray */
+    --ink-muted: #94a3b8;
+    /* Muted text -> Medium Gray */
+
+    /* Shadows (Deepened for dark mode) */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+
+    /* Chart Gradients (Subtler on dark) */
+    --chart-grid: rgba(255, 255, 255, 0.05);
+}
+
+/* Feature Elements in Dark Mode */
+[data-theme="dark"] .pricing-card-elite,
+[data-theme="dark"] .plan-card-elite,
+[data-theme="dark"] .metric-hero-card,
+[data-theme="dark"] .insight-card,
+[data-theme="dark"] .recommendation-card,
+[data-theme="dark"] .qa-card,
+[data-theme="dark"] .executive-quote {
+    background: var(--surface-secondary);
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-md);
+}
+
+[data-theme="dark"] .card {
+    background: var(--surface-secondary);
+    border-color: var(--border-default);
+}
+
+/* Input Fields in Dark Mode */
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: var(--surface-primary);
+    border-color: var(--border-default);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+    border-color: var(--accent);
+    background: var(--surface-secondary);
+}
+
+/* Table Striping */
+[data-theme="dark"] tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Primary Buttons in Dark Mode — already green in base, just ensure contrast */
+[data-theme="dark"] .btn-primary,
+[data-theme="dark"] .primary-btn,
+[data-theme="dark"] button[type="submit"] {
+    background: var(--accent) !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-primary:hover,
+[data-theme="dark"] .primary-btn:hover,
+[data-theme="dark"] button[type="submit"]:hover {
+    background: var(--accent-hover) !important;
+    color: #ffffff !important;
+}
+
+/* Secondary Buttons in Dark Mode — make visible with accent border */
+[data-theme="dark"] .btn-secondary,
+[data-theme="dark"] .secondary-btn {
+    background: transparent;
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+}
+
+[data-theme="dark"] .btn-secondary:hover,
+[data-theme="dark"] .secondary-btn:hover {
+    background: var(--surface-tertiary);
+    color: var(--text-primary);
+    border-color: var(--accent);
+}
+
+/* Final CTA Section */
+[data-theme="dark"] .final-cta {
+    background: var(--slate-900) !important;
+    border-top: 1px solid var(--border-default);
+}
+
+[data-theme="dark"] .final-cta h2 {
+    color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .final-cta p {
+    color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .final-cta .btn-primary {
+    background: #ffffff !important;
+    color: var(--accent) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .final-cta .btn-primary:hover {
+    background: var(--slate-100) !important;
+    color: var(--accent-hover) !important;
+}
+
+/* Nav CTA in Dark Mode — already green in base */
+[data-theme="dark"] .nav-cta {
+    background: var(--accent) !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .nav-cta:hover {
+    background: var(--accent-hover) !important;
+    color: #ffffff !important;
+}
+
+/* Upgrade CTA Cards in Dark Mode */
+[data-theme="dark"] .upgrade-cta-card.to-pro {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.2) 100%);
+    border-color: rgba(251, 191, 36, 0.25);
+}
+
+[data-theme="dark"] .upgrade-cta-card.to-pro .upgrade-cta-content h3 {
+    color: #fde68a;
+}
+
+[data-theme="dark"] .upgrade-cta-card.to-pro .upgrade-cta-content p,
+[data-theme="dark"] .upgrade-cta-card.to-pro .upgrade-cta-features span {
+    color: #fef3c7;
+}
+
+[data-theme="dark"] .upgrade-cta-card.to-pro .btn-upgrade-cta {
+    background: #fbbf24;
+    color: #78350f;
+}
+
+[data-theme="dark"] .upgrade-cta-card.to-business {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.2) 100%);
+    border-color: rgba(139, 92, 246, 0.25);
+}
+
+[data-theme="dark"] .upgrade-cta-card.to-business .upgrade-cta-content h3 {
+    color: #c4b5fd;
+}
+
+[data-theme="dark"] .upgrade-cta-card.to-business .upgrade-cta-content p,
+[data-theme="dark"] .upgrade-cta-card.to-business .upgrade-cta-features span {
+    color: #ede9fe;
+}
+
+[data-theme="dark"] .upgrade-cta-card.to-business .btn-upgrade-cta {
+    background: #8b5cf6;
+    color: #ede9fe;
+}
+
+[data-theme="dark"] .upgrade-cta-card.maxed-out {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.15) 100%);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+
+[data-theme="dark"] .upgrade-cta-card.maxed-out .upgrade-cta-content h3 {
+    color: #6ee7b7;
+}
+
+[data-theme="dark"] .upgrade-cta-card.maxed-out .upgrade-cta-content p {
+    color: #a7f3d0;
+}
+
+/* Usage Progress in Dark Mode */
+[data-theme="dark"] .usage-progress-item {
+    background: var(--surface-secondary);
+    border-color: var(--border-default);
+}
+
+[data-theme="dark"] .usage-progress-bar {
+    background: var(--surface-tertiary);
+}
+
+/* Plan Info Card in Dark Mode */
+[data-theme="dark"] .plan-info-card {
+    background: var(--surface-secondary);
+    border-color: var(--border-default);
+}
+
+[data-theme="dark"] .plan-info-icon.pro {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.3));
+}
+
+[data-theme="dark"] .plan-info-icon.business {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.3));
+}
+
+/* Plan Badges in Dark Mode */
+[data-theme="dark"] .plan-business {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(124, 58, 237, 0.4));
+    color: #c4b5fd;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.2s ease;
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+}
+
+.theme-toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+    color: var(--text-primary);
+    background: var(--surface-tertiary);
+}

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExecSlate — Sign Up</title>
+    <meta name="description" content="Create your ExecSlate account and start generating executive reports.">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='dark-theme.css') }}">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class="login-container">
+        <div class="login-card fade-in">
+
+            {% if plan == 'pro' %}
+            <!-- Pro Plan Signup -->
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <span class="plan-badge plan-pro" style="font-size: 0.85rem; padding: 6px 16px;">⚡ PROFESSIONAL</span>
+            </div>
+            <h1>Create Your Pro Account</h1>
+            <p>Sign up and unlock 20 uploads, 10 AI analyses, PowerPoint exports — <strong>$49/mo</strong></p>
+
+            {% elif plan == 'business' %}
+            <!-- Business Plan Signup -->
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <span class="plan-badge plan-business" style="font-size: 0.85rem; padding: 6px 16px;">👑 BUSINESS</span>
+            </div>
+            <h1>Create Your Business Account</h1>
+            <p>Sign up and get unlimited uploads, unlimited AI, all exports — <strong>$99/mo</strong></p>
+
+            {% else %}
+            <!-- Free Plan Signup (default) -->
+            <h1>Create Your Account</h1>
+            <p>Start generating executive reports for free</p>
+            {% endif %}
+
+            {% if error %}
+            <div class="error">
+                <strong>⚠️</strong> {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" action="/register" class="login-form">
+                <!-- Pass the selected plan through -->
+                <input type="hidden" name="selected_plan" value="{{ plan or 'free' }}">
+
+                <div>
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="your@email.com" required autofocus>
+                </div>
+
+                <div>
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password"
+                        placeholder="Create a password (min 6 characters)" required minlength="6">
+                </div>
+
+                <div>
+                    <label for="confirm_password">Confirm Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password"
+                        placeholder="Confirm your password" required minlength="6">
+                </div>
+
+                {% if plan == 'pro' %}
+                <button type="submit" class="btn-primary large"
+                    style="background: linear-gradient(135deg, #d97706, #b45309);">
+                    Create Account & Get Pro →
+                </button>
+                {% elif plan == 'business' %}
+                <button type="submit" class="btn-primary large"
+                    style="background: linear-gradient(135deg, #7c3aed, #5b21b6);">
+                    Create Account & Get Business →
+                </button>
+                {% else %}
+                <button type="submit" class="btn-primary large">Create Free Account</button>
+                {% endif %}
+            </form>
+
+            <div class="login-link-row">
+                Already have an account? <a href="/login">Sign In</a>
+            </div>
+
+            {% if not plan %}
+            <div class="login-divider">
+                <span>— or —</span>
+                <a href="/demo" class="btn-secondary">
+                    Try Demo Account
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="back-link">
+                <a href="/">← Back to Home</a>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode">
+        <span id="themeIcon">🌙</span>
+    </button>
+
+    <script src="{{ url_for('static', path='theme.js') }}"></script>
+    <script src="{{ url_for('static', path='toast.js') }}"></script>
+</body>
+
+</html>

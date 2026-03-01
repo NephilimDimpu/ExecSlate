@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+jinja2
+pandas
+openai
+matplotlib
+seaborn
+reportlab
+python-pptx
+openpyxl
+python-docx
+python-multipart
+itsdangerous
+passlib[bcrypt]
+slowapi
+razorpay

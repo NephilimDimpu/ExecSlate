@@ -1,0 +1,248 @@
+/* ==================== DEMO SHOWCASE SECTION ==================== */
+.demo-showcase {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    padding: 5rem 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="dark"] .demo-showcase {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+.demo-showcase-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.demo-showcase-content {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+@media (max-width: 968px) {
+    .demo-showcase-content {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+    }
+}
+
+/* Text Content */
+.demo-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.demo-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    line-height: 1.2;
+}
+
+[data-theme="dark"] .demo-title {
+    color: #f1f5f9;
+}
+
+.demo-subtitle {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    margin: 0 0 2rem 0;
+    line-height: 1.6;
+}
+
+[data-theme="dark"] .demo-subtitle {
+    color: #cbd5e1;
+}
+
+.demo-features-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem 0;
+}
+
+.demo-features-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .demo-features-list li {
+    color: #e2e8f0;
+}
+
+.demo-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: #10b981;
+    color: white;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+/* CTA Section */
+.demo-showcase-cta {
+    margin-top: 2rem;
+}
+
+.btn-demo-large {
+    display: inline-block;
+    font-size: 1.2rem;
+    padding: 1rem 2.5rem;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-demo-large:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, #059669, #047857);
+    color: white;
+}
+
+.demo-note {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-tertiary);
+    text-align: center;
+}
+
+.demo-highlight {
+    color: #059669;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .demo-highlight {
+    color: #34d399;
+}
+
+/* Visual Mockup */
+.demo-screenshot-placeholder {
+    position: relative;
+}
+
+.demo-mockup {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    padding: 1.5rem;
+    position: relative;
+    animation: float 6s ease-in-out infinite;
+}
+
+[data-theme="dark"] .demo-mockup {
+    background: #1e293b;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.demo-mockup-header {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+[data-theme="dark"] .demo-mockup-header {
+    border-bottom-color: #334155;
+}
+
+.demo-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: #cbd5e1;
+}
+
+.demo-mockup-content {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    height: 200px;
+    padding: 0 1rem;
+}
+
+.demo-chart-bar {
+    flex: 1;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border-radius: 0.5rem 0.5rem 0 0;
+    height: 80%;
+    transition: all 0.3s ease;
+}
+
+.demo-mockup:hover .demo-chart-bar {
+    opacity: 0.8;
+}
+
+.demo-live-badge {
+    position: absolute;
+    top: -0.75rem;
+    right: -0.75rem;
+    background: #10b981;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.demo-pulse {
+    width: 0.5rem;
+    height: 0.5rem;
+    background: white;
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+}

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExecSlate — {{ title | default('Error') }}</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='dark-theme.css') }}">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+    <style>
+        .error-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 2rem;
+        }
+
+        [data-theme="dark"] .error-page {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        .error-card {
+            background: var(--color-bg, #ffffff);
+            border-radius: 1rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        [data-theme="dark"] .error-card {
+            background: #1e293b;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            line-height: 1;
+        }
+
+        .error-code {
+            font-size: 4rem;
+            font-weight: 800;
+            color: var(--color-text, #1e293b);
+            margin: 0;
+            letter-spacing: -2px;
+        }
+
+        [data-theme="dark"] .error-code {
+            color: #f1f5f9;
+        }
+
+        .error-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-text, #334155);
+            margin: 0.5rem 0;
+        }
+
+        [data-theme="dark"] .error-title {
+            color: #cbd5e1;
+        }
+
+        .error-message {
+            font-size: 1rem;
+            color: var(--color-muted, #64748b);
+            margin: 1rem 0 2rem;
+            line-height: 1.6;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .error-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .error-btn-primary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+        }
+
+        .error-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4);
+        }
+
+        .error-btn-secondary {
+            background: var(--color-surface, #f1f5f9);
+            color: var(--color-text, #334155);
+            border: 1px solid var(--color-border, #e2e8f0);
+        }
+
+        [data-theme="dark"] .error-btn-secondary {
+            background: #334155;
+            color: #e2e8f0;
+            border-color: #475569;
+        }
+
+        .error-btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .error-detail {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--color-border, #e2e8f0);
+            font-size: 0.85rem;
+            color: var(--color-muted, #94a3b8);
+        }
+
+        [data-theme="dark"] .error-detail {
+            border-top-color: #334155;
+        }
+
+        .error-detail code {
+            background: var(--color-surface, #f1f5f9);
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+        }
+
+        [data-theme="dark"] .error-detail code {
+            background: #0f172a;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="error-page">
+        <div class="error-card">
+
+            {% if status_code == 404 %}
+            <div class="error-icon">🔍</div>
+            <p class="error-code">404</p>
+            <h1 class="error-title">Page Not Found</h1>
+            <p class="error-message">
+                The page you're looking for doesn't exist or has been moved.
+                Let's get you back on track.
+            </p>
+            {% elif status_code == 403 %}
+            <div class="error-icon">🔒</div>
+            <p class="error-code">403</p>
+            <h1 class="error-title">Access Denied</h1>
+            <p class="error-message">
+                You don't have permission to access this resource.
+                Please log in with an authorized account.
+            </p>
+            {% elif status_code == 422 %}
+            <div class="error-icon">📄</div>
+            <p class="error-code">422</p>
+            <h1 class="error-title">Invalid Data</h1>
+            <p class="error-message">
+                {{ detail | default("The submitted data couldn't be processed. Please check your input and try again.")
+                }}
+            </p>
+            {% else %}
+            <div class="error-icon">⚡</div>
+            <p class="error-code">{{ status_code | default(500) }}</p>
+            <h1 class="error-title">Something Went Wrong</h1>
+            <p class="error-message">
+                {{ detail | default("An unexpected error occurred. Our team has been notified. Please try again in a
+                moment.") }}
+            </p>
+            {% endif %}
+
+            <div class="error-actions">
+                <a href="/" class="error-btn error-btn-primary">← Back to Dashboard</a>
+                <a href="javascript:history.back()" class="error-btn error-btn-secondary">Go Back</a>
+            </div>
+
+            {% if detail and status_code != 422 %}
+            <div class="error-detail">
+                <strong>Details:</strong> <code>{{ detail }}</code>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExecSlate — {{ report.client }}</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/dark-theme.css">
+    <link rel="stylesheet" href="/static/loading.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Prevent FOUC (Flash of Unstyled Content)
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+</head>
+
+<body>
+
+    <!-- ================= NAVBAR ================= -->
+    <header class="nav">
+        <div class="nav-inner">
+
+            <a href="/" class="nav-logo">ExecSlate</a>
+
+            <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+
+            <div class="nav-right" id="navRight">
+                <span class="nav-user">{{ user.email }}</span>
+                <span class="plan-badge plan-{{ user.plan }}">{{ user.plan | upper }}</span>
+                <a href="/logout" class="nav-link">Logout</a>
+            </div>
+
+        </div>
+    </header>
+
+
+    <!-- ================= PAGE HEADER ================= -->
+    <section class="report-hero">
+
+        <div class="report-hero-inner">
+
+            <div>
+                <h1>{{ report.client }}</h1>
+                <p class="report-period">{{ report.period }}</p>
+            </div>
+
+            {% if report.get('report_type') %}
+            <div class="report-type-badge {{ report.report_type }}">
+                {% if report.report_type == "ai" %}
+                ✨ AI Enhanced Analysis
+                {% else %}
+                📊 Statistical Analysis
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= ERROR ================= -->
+    {% if report.error %}
+    <div class="alert error">
+        {{ report.error }}
+    </div>
+    {% endif %}
+
+
+    <!-- ================= KEY TAKEAWAY (ELITE) ================= -->
+    {% if report.get('generated') and report.ai_summary %}
+    <div class="key-takeaway">
+        <div class="key-takeaway-header">
+            <span class="icon">💡</span>
+            <span>Key Takeaway</span>
+        </div>
+        <p class="key-takeaway-text">
+            {% set primary_label = 'Revenue' %}
+            {% if report.get('kpi_metrics') and report.get('primary_kpi') and report.primary_kpi in report.kpi_metrics
+            %}
+            {% set primary_label = report.kpi_metrics[report.primary_kpi].get('label', 'Revenue') %}
+            {% endif %}
+            {% if report.trend == "Increasing" %}
+            {{ primary_label }} of {{ report.currency }}{{ "{:,.0f}".format(report.total_revenue) }} shows {{
+            report.growth_rate|default(0)|abs|round(1) }}% growth,
+            {% if report.top_region %}driven by strong performance in {{ report.top_region }}.{% else %}indicating
+            positive market momentum.{% endif %}
+            {% elif report.trend == "Decreasing" %}
+            {{ primary_label }} of {{ report.currency }}{{ "{:,.0f}".format(report.total_revenue) }} reflects {{
+            report.growth_rate|default(0)|abs|round(1) }}% decline,
+            requiring strategic intervention to stabilize performance.
+            {% else %}
+            {{ primary_label }} of {{ report.currency }}{{ "{:,.0f}".format(report.total_revenue) }} demonstrates stable
+            performance
+            {% if report.top_region %}with {{ report.top_region }} as the primary market.{% else %}across the reporting
+            period.{% endif %}
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+
+    <!-- ================= HERO METRICS (ELITE) ================= -->
+    {% if report.total_revenue %}
+    <section class="metrics-hero-grid">
+
+        <div class="metric-hero-card">
+            <div class="metric-hero-label">
+                {% if report.get('kpi_metrics') and report.get('primary_kpi') and report.primary_kpi in
+                report.kpi_metrics %}
+                Total {{ report.kpi_metrics[report.primary_kpi].get('label', 'Revenue') }}
+                {% else %}Total Revenue{% endif %}
+            </div>
+            <div class="metric-hero-value">
+                {{ report.currency }}{{ "{:,.0f}".format(report.total_revenue) }}
+            </div>
+            {% if report.growth_rate is defined %}
+            <span
+                class="metric-hero-trend {{ 'positive' if report.growth_rate > 0 else 'negative' if report.growth_rate < 0 else 'neutral' }}">
+                {% if report.growth_rate > 0 %}↑{% elif report.growth_rate < 0 %}↓{% else %}→{% endif %} {{
+                    report.growth_rate|abs|round(1) }}% </span>
+                    {% endif %}
+        </div>
+
+        <div class="metric-hero-card">
+            <div class="metric-hero-label">
+                {% if report.get('kpi_metrics') and report.get('primary_kpi') and report.primary_kpi in
+                report.kpi_metrics %}
+                Average {{ report.kpi_metrics[report.primary_kpi].get('label', 'Revenue') }}
+                {% else %}Average Revenue{% endif %}
+            </div>
+            <div class="metric-hero-value">
+                {{ report.currency }}{{ "{:,.0f}".format(report.avg_revenue) }}
+            </div>
+            <span class="metric-hero-trend neutral">per period</span>
+        </div>
+
+        <div class="metric-hero-card">
+            <div class="metric-hero-label">Trend Direction</div>
+            <div class="metric-hero-value trend-{{ report.trend | lower }}">
+                {% if report.trend == "Increasing" %}↑{% elif report.trend == "Decreasing" %}↓{% else %}→{% endif %}
+                {{ report.trend }}
+            </div>
+            <span
+                class="metric-hero-trend {{ 'positive' if report.trend == 'Increasing' else 'negative' if report.trend == 'Decreasing' else 'neutral' }}">
+                {% if report.trend == "Increasing" %}Growing{% elif report.trend == "Decreasing" %}Declining{% else
+                %}Stable{% endif %}
+            </span>
+        </div>
+
+        {% if report.top_region %}
+        <div class="metric-hero-card">
+            <div class="metric-hero-label">Top Region</div>
+            <div class="metric-hero-value">{{ report.top_region }}</div>
+            <span class="metric-hero-trend neutral">Primary Market</span>
+        </div>
+        {% endif %}
+
+    </section>
+    {% endif %}
+
+
+    <!-- ================= MULTI-KPI DASHBOARD (PHASE B) ================= -->
+    {% if report.get('kpi_metrics') and report.kpi_metrics|length > 1 %}
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto; padding: 2rem;">
+        <h3
+            style="margin: 0 0 1.5rem 0; color: var(--text); font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.3rem;">📊</span> Business Performance Dashboard
+        </h3>
+        <div class="kpi-dashboard-grid"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
+            {% for col_name, kpi in report.kpi_metrics.items() %}
+            {% if col_name != report.get('primary_kpi', '') %}
+            <div
+                style="background: var(--bg-secondary, #1e293b); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border, #334155); transition: transform 0.2s;">
+                <div
+                    style="font-size: 0.75rem; color: var(--text-muted, #94a3b8); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+                    {% if kpi.type == 'revenue' %}💰
+                    {% elif kpi.type == 'profit' %}📈
+                    {% elif kpi.type == 'margin' %}📊
+                    {% elif kpi.type == 'cost' %}💸
+                    {% elif kpi.type == 'units' %}📦
+                    {% else %}📋{% endif %}
+                    {{ kpi.label }}
+                </div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text, #f1f5f9); margin-bottom: 0.4rem;">
+                    {% if kpi.format == 'currency' %}
+                    {{ report.currency }}{{ "{:,.0f}".format(kpi.total) }}
+                    {% elif kpi.format == 'percent' %}
+                    {{ "{:.1f}".format(kpi.avg) }}%
+                    {% else %}
+                    {{ "{:,.0f}".format(kpi.total) }}
+                    {% endif %}
+                </div>
+                <div style="font-size: 0.8rem; font-weight: 500;
+                    {% if kpi.trend == 'up' %}
+                        {% if kpi.direction == 'down_good' %}color: #ef4444;{% else %}color: #10b981;{% endif %}
+                    {% elif kpi.trend == 'down' %}
+                        {% if kpi.direction == 'down_good' %}color: #10b981;{% else %}color: #ef4444;{% endif %}
+                    {% else %}
+                        color: #94a3b8;
+                    {% endif %}">
+                    {% if kpi.trend == 'up' %}↑{% elif kpi.trend == 'down' %}↓{% else %}→{% endif %}
+                    {{ kpi.growth|abs|round(1) }}%
+                    <span style="color: var(--text-muted, #94a3b8); font-weight: 400; margin-left: 0.3rem;">
+                        {% if kpi.format == 'currency' %}avg {{ report.currency }}{{ "{:,.0f}".format(kpi.avg) }}{% elif
+                        kpi.format == 'percent' %}median {{ "{:.1f}".format(kpi.median) }}%{% else %}avg {{
+                        "{:,.0f}".format(kpi.avg) }}{% endif %}
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+
+    <!-- ================= USAGE ================= -->
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
+
+        <h3>Usage</h3>
+
+        <div class="usage-grid">
+
+            <div>
+                <div class="usage-label">Uploads</div>
+                <div class="usage-value">
+                    {{ stats.uploads_used|default(0) }}
+                    {% if PLAN_LIMITS[user.plan].max_uploads %}
+                    / {{ PLAN_LIMITS[user.plan].max_uploads }}
+                    {% else %}
+                    / Unlimited
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <div class="usage-label">AI Generations</div>
+                <div class="usage-value">
+                    {{ stats.ai_generations_used|default(0) }}
+                </div>
+            </div>
+
+            <div>
+                <div class="usage-label">AI Regenerations</div>
+                <div class="usage-value">
+                    {{ stats.ai_regens_used|default(0) }}
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= UPLOAD ================= -->
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
+
+        <h3>Upload Data</h3>
+
+        <form action="/upload/{{ report.id }}" method="post" enctype="multipart/form-data" class="upload-form">
+
+            <label>Currency</label>
+            <select name="currency">
+                <option value="$" {% if report.currency=="$" %}selected{% endif %}>USD</option>
+                <option value="₹" {% if report.currency=="₹" %}selected{% endif %}>INR</option>
+                <option value="€" {% if report.currency=="€" %}selected{% endif %}>EUR</option>
+                <option value="£" {% if report.currency=="£" %}selected{% endif %}>GBP</option>
+            </select>
+
+            <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
+            <p style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: -0.5rem;">
+                Accepts CSV and Excel files (.csv, .xlsx, .xls)
+            </p>
+
+            <!-- Analysis Type Selector -->
+            <label style="margin-top: 0.5rem;">Analysis Type</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+
+                <!-- Standard Analysis -->
+                <label class="analysis-type-card" id="standard-card" style="
+                    display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem;
+                    border: 2px solid var(--border-primary, #e2e8f0); border-radius: 0.75rem;
+                    cursor: pointer; transition: all 0.2s ease; background: var(--bg-primary, #fff);
+                ">
+                    <input type="radio" name="analysis_type" value="standard" checked
+                        style="margin-top: 3px; accent-color: #6366f1;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary, #1e293b);">
+                            📊 Standard Analysis
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-tertiary, #94a3b8); margin-top: 0.25rem;">
+                            Consulting-grade statistical insights, recommendations & board Q&A
+                        </div>
+                    </div>
+                </label>
+
+                <!-- AI-Enhanced Analysis -->
+                {% if user.plan in ['pro', 'business'] %}
+                <label class="analysis-type-card" id="ai-card" style="
+                    display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem;
+                    border: 2px solid var(--border-primary, #e2e8f0); border-radius: 0.75rem;
+                    cursor: pointer; transition: all 0.2s ease; background: var(--bg-primary, #fff);
+                ">
+                    <input type="radio" name="analysis_type" value="ai_enhanced"
+                        style="margin-top: 3px; accent-color: #6366f1;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary, #1e293b);">
+                            ✨ AI-Enhanced <span
+                                style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.7rem; vertical-align: middle;">PRO</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-tertiary, #94a3b8); margin-top: 0.25rem;">
+                            GPT-powered deep analysis with strategic context & industry benchmarking
+                        </div>
+                    </div>
+                </label>
+                {% else %}
+                <div class="analysis-type-card" style="
+                    display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem;
+                    border: 2px dashed var(--border-primary, #e2e8f0); border-radius: 0.75rem;
+                    cursor: not-allowed; opacity: 0.6; background: var(--bg-secondary, #f8fafc);
+                ">
+                    <input type="radio" disabled style="margin-top: 3px;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-secondary, #64748b);">
+                            🔒 AI-Enhanced <span
+                                style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.7rem; vertical-align: middle;">PRO</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-tertiary, #94a3b8); margin-top: 0.25rem;">
+                            <a href="/pricing" style="color: #6366f1; text-decoration: none;">Upgrade to Pro</a> for
+                            AI-powered deep analysis
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+
+            <button class="btn-primary">Generate Report</button>
+
+        </form>
+
+        <form action="/demo/{{ report.id }}" method="post" class="demo-form">
+            <button class="btn-secondary">Load Demo Data</button>
+        </form>
+
+    </section>
+
+
+    <!-- ================= EXECUTIVE SUMMARY (ELITE) ================= -->
+    {% if report.ai_summary %}
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
+        <h3>Executive Summary</h3>
+
+        <div class="executive-quote">
+            <p class="executive-quote-text">{{ report.ai_summary }}</p>
+            <div class="executive-quote-badge">
+                {% if report.report_type == "ai" %}
+                ✨ AI-Enhanced Analysis
+                {% else %}
+                📊 Statistical Analysis
+                {% endif %}
+                • {{ report.row_count|default(0) }} data points analyzed
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+
+    <!-- ================= CHARTS (INTERACTIVE) ================= -->
+
+    <!-- ================= DETAILED MARKET ANALYSIS (ENHANCED) ================= -->
+    {% if report.comprehensive_analysis and report.comprehensive_analysis.segmentation %}
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto; margin-bottom: 2rem;">
+        <h3>Detailed Market Analysis</h3>
+
+        <!-- Period Comparison -->
+        {% if report.comprehensive_analysis.period_comparison %}
+        <div style="margin-bottom: 2rem;">
+            <h4 style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 1rem;">Period Performance ({{
+                report.comprehensive_analysis.column_detection.period_type|title }})</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div class="metric-card" style="background: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem;">
+                    <div style="font-size: 0.9rem; color: var(--text-tertiary);">Current Period</div>
+                    <div style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary);">
+                        {{ report.currency }}{{
+                        "{:,.0f}".format(report.comprehensive_analysis.period_comparison.current) }}
+                    </div>
+                </div>
+                <div class="metric-card" style="background: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem;">
+                    <div style="font-size: 0.9rem; color: var(--text-tertiary);">Previous Period</div>
+                    <div style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary);">
+                        {{ report.currency }}{{
+                        "{:,.0f}".format(report.comprehensive_analysis.period_comparison.previous) }}
+                    </div>
+                </div>
+                <div class="metric-card" style="background: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem;">
+                    <div style="font-size: 0.9rem; color: var(--text-tertiary);">Change</div>
+                    <div
+                        style="font-size: 1.5rem; font-weight: 600; color: {{ 'var(--emerald)' if report.comprehensive_analysis.period_comparison.percent_change > 0 else 'var(--rose)' }};">
+                        {{ "{:+.1f}".format(report.comprehensive_analysis.period_comparison.percent_change) }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Segmentation Tables -->
+        {% for metric, dims in report.comprehensive_analysis.segmentation.items() %}
+        <!-- Only show revenue or primary metric to avoid clutter -->
+        {% if 'revenue' in metric|lower or loop.first %}
+        <div style="margin-bottom: 1.5rem;">
+            <h4
+                style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 1rem; text-transform: capitalize;">
+                {{ metric }} Breakdown</h4>
+
+            <div class="segmentation-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                {% for dim_name, dim_data in dims.items() %}
+                <div style="border: 1px solid var(--border-primary); border-radius: 0.75rem; overflow: hidden;">
+                    <div
+                        style="background: var(--bg-secondary); padding: 0.75rem 1rem; font-weight: 600; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="text-transform: capitalize;">{{ dim_name|replace('_', ' ') }} Analysis</span>
+                        <span
+                            style="background: var(--bg-primary); padding: 0.1rem 0.5rem; border-radius: 1rem; font-size: 0.75rem; color: var(--text-tertiary);">
+                            {{ dim_data.segment_count|default(0) }} Segments
+                        </span>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <!-- Top Performer -->
+                        <div
+                            style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; align-items: center;">
+                            <div>
+                                <div
+                                    style="font-size: 0.8rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Top Performer</div>
+                                <div style="font-weight: 600; color: var(--text-primary);">{{
+                                    dim_data.top_performer.name }}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: 600; color: var(--emerald);">{{ report.currency }}{{
+                                    "{:,.0f}".format(dim_data.top_performer.value) }}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-tertiary);">{{
+                                    "{:.1f}".format(dim_data.top_performer.pct) }}% of total</div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Performer -->
+                        {% if dim_data.get('bottom_performer') and dim_data.bottom_performer.name !=
+                        dim_data.top_performer.name %}
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px dashed var(--border-primary);">
+                            <div>
+                                <div
+                                    style="font-size: 0.8rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Lowest Performer</div>
+                                <div style="font-weight: 600; color: var(--text-primary);">{{
+                                    dim_data.bottom_performer.name }}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: 600; color: var(--rose);">{{ report.currency }}{{
+                                    "{:,.0f}".format(dim_data.bottom_performer.value) }}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-tertiary);">{{
+                                    "{:.1f}".format(dim_data.bottom_performer.pct) }}% of total</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+
+    </section>
+    {% endif %}
+
+    <!-- ================= CHARTS (INTERACTIVE) ================= -->
+    {% if report.get('generated') and report.revenue_series %}
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
+
+        <h3>Visualizations</h3>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: var(--space-8);">
+
+            <!-- Revenue Trend -->
+            <div class="chart-block">
+                <h4 style="margin-bottom: var(--space-4); color: var(--text-secondary);">Revenue Trend</h4>
+                <div style="position: relative; height: 320px; width: 100%;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                <p class="chart-caption" style="margin-top: var(--space-4);">
+                    Revenue trajectory reflects {{ report.trend | lower }} momentum with {{
+                    report.growth_rate|default(0)|abs|round(1) }}% change.
+                </p>
+            </div>
+
+            <!-- Region Distribution -->
+            {% if report.region_labels %}
+            <div class="chart-block">
+                <h4 style="margin-bottom: var(--space-4); color: var(--text-secondary);">Regional Distribution</h4>
+                <div style="position: relative; height: 320px; width: 100%;">
+                    <canvas id="regionChart"></canvas>
+                </div>
+                <p class="chart-caption" style="margin-top: var(--space-4);">
+                    {% if report.top_region %}
+                    {{ report.top_region }} leads regional performance, presenting both opportunity and concentration
+                    considerations.
+                    {% else %}
+                    Revenue is distributed across regions with balanced market penetration.
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+
+        </div>
+
+    </section>
+
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Chart Initialization Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Common Chart Options (Elite Style)
+            Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
+            Chart.defaults.color = '#64748b';
+            Chart.defaults.scale.grid.color = 'rgba(0, 0, 0, 0.05)';
+            Chart.defaults.plugins.tooltip.backgroundColor = '#1e293b';
+            Chart.defaults.plugins.tooltip.padding = 12;
+            Chart.defaults.plugins.tooltip.cornerRadius = 8;
+            Chart.defaults.plugins.tooltip.titleFont = { size: 13, weight: 600 };
+            Chart.defaults.plugins.tooltip.bodyFont = { size: 13 };
+
+            // Data from Backend
+            const revenueData = {{ report.revenue_series | tojson
+        }};
+        const regionLabels = {{ report.region_labels | default ([]) | tojson }};
+        const regionValues = {{ report.region_values | default ([]) | tojson }};
+        const currency = "{{ report.currency }}";
+
+        // 1. Revenue Chart
+        if (revenueData && revenueData.length > 0) {
+            const ctxRev = document.getElementById('revenueChart').getContext('2d');
+
+            // Create Gradient
+            const gradientRev = ctxRev.createLinearGradient(0, 0, 0, 300);
+            gradientRev.addColorStop(0, 'rgba(99, 102, 241, 0.2)'); // Indigo
+            gradientRev.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+            new Chart(ctxRev, {
+                type: 'line',
+                data: {
+                    labels: revenueData.map((_, i) => 'Period ' + (i + 1)),
+                    datasets: [{
+                        label: 'Revenue',
+                        data: revenueData,
+                        borderColor: '#6366f1',
+                        backgroundColor: gradientRev,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#6366f1',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return currency + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Region Chart
+        if (regionLabels && regionLabels.length > 0) {
+            const ctxReg = document.getElementById('regionChart').getContext('2d');
+
+            new Chart(ctxReg, {
+                type: 'bar',
+                data: {
+                    labels: regionLabels,
+                    datasets: [{
+                        label: 'Revenue',
+                        data: regionValues,
+                        backgroundColor: [
+                            '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#10b981'
+                        ],
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return currency + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+    });
+    </script>
+    {% endif %}
+
+
+    <!-- ================= INSIGHTS (ELITE CARDS) ================= -->
+    {% if report.ai_insights %}
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
+        <h3>Executive Insights</h3>
+
+        <div class="insight-cards">
+            {% for item in report.ai_insights %}
+            <div class="insight-card {{ item.sentiment }}">
+                <span class="insight-icon">
+                    {% if item.sentiment == 'positive' %}📈
+                    {% elif item.sentiment == 'negative' %}⚠️
+                    {% else %}ℹ️{% endif %}
+                </span>
+                <div class="insight-content">
+                    <div class="insight-category">
+                        {% if item.sentiment == 'positive' %}Growth Signal
+                        {% elif item.sentiment == 'negative' %}Risk Factor
+                        {% else %}Observation{% endif %}
+                    </div>
+                    <p class="insight-text">{{ item.text }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+
+    <!-- ================= RECOMMENDATIONS (ELITE) ================= -->
+    {% if report.ai_recommendations %}
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
+        <h3>Strategic Recommendations</h3>
+
+        <div class="recommendation-cards">
+            {% for item in report.ai_recommendations %}
+            <div class="recommendation-card">
+                <span class="recommendation-number">{{ loop.index }}</span>
+                <p class="recommendation-text">{{ item }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+
+    <!-- ================= QA (ELITE CARDS) ================= -->
+    {% if report.ai_qa %}
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
+        <h3>Board Q&A</h3>
+
+        <div class="qa-cards">
+            {% for qa in report.ai_qa %}
+            <div class="qa-card">
+                <div class="qa-question">
+                    <span class="qa-question-icon">Q</span>
+                    {{ qa.q }}
+                </div>
+                <div class="qa-answer">{{ qa.a }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </section>
+    {% endif %}
+
+
+    <!-- ================= EXPORT ================= -->
+    {% if report.generated %}
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
+
+        <h3>Export</h3>
+
+        <div class="export-grid">
+
+            <a href="/export/pdf/{{ report.id }}" class="btn-primary export-btn" data-export="PDF">Export PDF</a>
+
+            <a href="/export/docx/{{ report.id }}" class="btn-secondary export-btn" data-export="Word">Export Word</a>
+
+            {% if PLAN_LIMITS[user.plan].ppt_export %}
+            <a href="/export/ppt/{{ report.id }}" class="btn-accent export-btn" data-export="PowerPoint">Export
+                PowerPoint</a>
+            {% else %}
+            <button class="btn-disabled">PowerPoint (Pro Only)</button>
+            {% endif %}
+
+        </div>
+
+    </section>
+    {% endif %}
+
+
+    <!-- ================= REGENERATE ================= -->
+    {% if report.generated %}
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+
+            <form action="/ai/regenerate/{{ report.id }}" method="post">
+                <input type="hidden" name="analysis_type" value="standard">
+                <button class="btn-outline">
+                    🔄 Regenerate Standard Analysis
+                </button>
+            </form>
+
+            {% if user.plan in ['pro', 'business'] %}
+            <form action="/ai/regenerate/{{ report.id }}" method="post">
+                <input type="hidden" name="analysis_type" value="ai_enhanced">
+                <button class="btn-primary" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                    ✨ Regenerate with AI
+                </button>
+            </form>
+            {% else %}
+            <button class="btn-disabled" style="cursor: not-allowed; opacity: 0.6;"
+                title="Upgrade to Pro for AI-powered analysis">
+                🔒 AI Regenerate (Pro)
+            </button>
+            {% endif %}
+
+        </div>
+    </section>
+    {% endif %}
+
+
+    <!-- ================= TIMESTAMP ================= -->
+    {% if report.generated %}
+    <div class="report-timestamp" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
+        Report generated on {{ report.generated_at|default('today') }} • ExecSlate Executive Intelligence Platform
+    </div>
+    {% endif %}
+
+
+    <!-- ================= DANGER ================= -->
+    <section class="danger-card" style="max-width: 1280px;">
+
+        <h3>Delete Project</h3>
+
+        <form action="/project/delete/{{ report.id }}" method="post" onsubmit="return confirm('Delete permanently?');">
+
+            <button class="btn-danger">
+                Delete Project
+            </button>
+
+        </form>
+
+    </section>
+
+
+
+
+
+
+
+    <!-- ================= LOADING OVERLAY ================= -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-title" id="loadingTitle">Generating insights...</div>
+            <div class="loading-subtitle" id="loadingSubtitle">This may take a few seconds</div>
+        </div>
+    </div>
+
+    <!-- ================= REGENERATE LOADING SCRIPT ================= -->
+    <script>
+        // Show loading overlay when regenerate forms are submitted
+        document.addEventListener('DOMContentLoaded', function () {
+            const forms = document.querySelectorAll('form[action^="/ai/regenerate"]');
+            const overlay = document.getElementById('loadingOverlay');
+            const title = document.getElementById('loadingTitle');
+            const subtitle = document.getElementById('loadingSubtitle');
+
+            forms.forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    const analysisType = this.querySelector('input[name="analysis_type"]').value;
+
+                    if (analysisType === 'ai_enhanced') {
+                        title.textContent = '✨ Generating AI-Enhanced Insights...';
+                        subtitle.textContent = 'Our AI is analyzing your data with deep strategic context';
+                    } else {
+                        title.textContent = '📊 Regenerating Standard Analysis...';
+                        subtitle.textContent = 'Applying consulting-grade statistical insights';
+                    }
+
+                    overlay.style.display = 'flex';
+                });
+            });
+        });
+    </script>
+
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode">
+        <span id="themeIcon">🌙</span>
+    </button>
+
+    <script src="/static/theme.js"></script>
+    <script src="/static/toast.js"></script>
+
+    <!-- Chart color update on theme change -->
+    <script>
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            if (typeof Chart !== 'undefined') {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                Chart.helpers.each(Chart.instances, (instance) => {
+                    instance.options.scales.x.grid.color = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                    instance.options.scales.y.grid.color = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                    instance.options.plugins.tooltip.backgroundColor = isDark ? '#f8fafc' : '#1e293b';
+                    instance.options.plugins.tooltip.titleColor = isDark ? '#0f172a' : '#ffffff';
+                    instance.options.plugins.tooltip.bodyColor = isDark ? '#0f172a' : '#ffffff';
+                    instance.update();
+                });
+            }
+        });
+
+        // Export loading states
+        document.querySelectorAll('.export-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const format = btn.dataset.export || 'file';
+                showToast(`Generating ${format} export… This may take a few seconds.`, 'info', 6000);
+            });
+        });
+    </script>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-title" id="loadingTitle">Processing...</div>
+            <div class="loading-subtitle" id="loadingSubtitle">Please wait</div>
+        </div>
+    </div>
+
+    <script>
+        // Loading State for Upload Form
+        const uploadForm = document.querySelector('.upload-form');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function (e) {
+                const overlay = document.getElementById('loadingOverlay');
+                const title = document.getElementById('loadingTitle');
+                const subtitle = document.getElementById('loadingSubtitle');
+
+                overlay.style.display = 'flex';
+
+                const steps = [
+                    { t: "Uploading File...", s: "Securely transferring your data" },
+                    { t: "Analyzing Data Structure...", s: "Detecting business metrics & dimensions" },
+                    { t: "Computing KPIs...", s: "Calculating trends, growth rates & segmentation" },
+                    { t: "Generating Insights...", s: "Building strategic narrative & recommendations" },
+                    { t: "Finalizing Report...", s: "Preparing presentation-ready exports" }
+                ];
+
+                let step = 0;
+                setInterval(() => {
+                    if (step < steps.length) {
+                        title.textContent = steps[step].t;
+                        subtitle.textContent = steps[step].s;
+                        step++;
+                    }
+                }, 1500);
+            });
+        }
+
+        // Loading State for AI Regeneration
+        document.querySelectorAll('form[action^="/ai/regenerate"]').forEach(form => {
+            form.addEventListener('submit', function (e) {
+                const overlay = document.getElementById('loadingOverlay');
+                const title = document.getElementById('loadingTitle');
+                const subtitle = document.getElementById('loadingSubtitle');
+
+                overlay.style.display = 'flex';
+                title.textContent = 'Regenerating Insights...';
+                subtitle.textContent = 'Applying analysis framework to your data';
+
+                setTimeout(() => {
+                    title.textContent = 'Almost Ready...';
+                    subtitle.textContent = 'Finalizing executive narrative';
+                }, 3000);
+            });
+        });
+
+        // Loading State for Demo Load
+        const demoForm = document.querySelector('.demo-form');
+        if (demoForm) {
+            demoForm.addEventListener('submit', function (e) {
+                const overlay = document.getElementById('loadingOverlay');
+                const title = document.getElementById('loadingTitle');
+                const subtitle = document.getElementById('loadingSubtitle');
+
+                overlay.style.display = 'flex';
+                title.textContent = 'Loading Demo Data...';
+                subtitle.textContent = 'Generating sample executive report';
+            });
+        }
+    </script>
+</body>
+
+</html>

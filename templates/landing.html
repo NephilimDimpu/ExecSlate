@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExecSlate — Executive Intelligence From Raw Data</title>
+    <meta name="description"
+        content="Upload any CSV and instantly generate board-ready executive reports with AI-powered narratives, multi-KPI dashboards, and PDF/PowerPoint/Word exports.">
+    <meta property="og:title" content="ExecSlate — Executive Intelligence From Raw Data">
+    <meta property="og:description" content="Upload any CSV and instantly generate board-ready executive reports.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://execslate.com">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='dark-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='demo-showcase.css') }}">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+</head>
+
+<body>
+
+    <!-- ================= NAVBAR ================= -->
+    <header class="nav">
+        <div class="nav-inner">
+            <div class="nav-logo">
+                ExecSlate
+            </div>
+
+            <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+
+            <nav class="nav-links" id="navLinks">
+                <a href="/demo">Try Demo</a>
+                <a href="/pricing">Pricing</a>
+                <a href="/login" class="nav-login">Login</a>
+                <a href="/register" class="nav-cta">Start Free</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ================= HERO ================= -->
+    <section class="hero">
+        <div class="hero-inner">
+
+            <div class="hero-text">
+
+                <h1>
+                    Board-Ready Reports.<br>
+                    Generated From Raw Data.
+                </h1>
+
+                <p class="hero-sub">
+                    Upload any CSV — revenue, costs, units, margins.
+                    Instantly generate executive narratives, multi-KPI dashboards,
+                    and presentation-ready PDF, PowerPoint & Word exports.
+                </p>
+
+                <div class="hero-cta">
+                    <a href="/register" class="btn-primary">
+                        Start Free
+                    </a>
+
+                    <a href="/pricing" class="btn-secondary">
+                        View Pricing
+                    </a>
+                </div>
+
+                <div class="hero-trust">
+                    No credit card required • Free plan available • Setup in minutes
+                </div>
+
+            </div>
+
+            <div class="hero-visual">
+                <div class="hero-card">
+                    <div class="hero-card-header">
+                        Executive Summary
+                    </div>
+
+                    <div class="hero-card-body">
+                        Revenue performance shows strong growth momentum
+                        with improving regional diversification and stable
+                        operating predictability.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ================= DEMO SHOWCASE ================= -->
+    <section class="demo-showcase">
+        <div class="demo-showcase-inner">
+            <div class="demo-showcase-content">
+                <div class="demo-showcase-text">
+                    <div class="demo-badge">🎯 Try It Now</div>
+                    <h2 class="demo-title">See ExecSlate In Action</h2>
+                    <p class="demo-subtitle">
+                        Experience the full power of executive report generation
+                        in under 60 seconds. No signup required.
+                    </p>
+
+                    <ul class="demo-features-list">
+                        <li>
+                            <span class="demo-check">✓</span>
+                            Upload any business CSV data
+                        </li>
+                        <li>
+                            <span class="demo-check">✓</span>
+                            Auto-detect KPIs & dimensions
+                        </li>
+                        <li>
+                            <span class="demo-check">✓</span>
+                            Executive summary & insights
+                        </li>
+                        <li>
+                            <span class="demo-check">✓</span>
+                            Export to PDF, PowerPoint & Word
+                        </li>
+                    </ul>
+
+                    <div class="demo-showcase-cta">
+                        <a href="/demo" class="btn-demo-large">
+                            🚀 Try Demo Now
+                        </a>
+                        <p class="demo-note">
+                            <span class="demo-highlight">Free demo</span> • Takes 30 seconds • No signup needed
+                        </p>
+                    </div>
+                </div>
+
+                <div class="demo-showcase-visual">
+                    <div class="demo-screenshot-placeholder">
+                        <div class="demo-mockup">
+                            <div class="demo-mockup-header">
+                                <div class="demo-dot"></div>
+                                <div class="demo-dot"></div>
+                                <div class="demo-dot"></div>
+                            </div>
+                            <div class="demo-mockup-content">
+                                <div class="demo-chart-bar"></div>
+                                <div class="demo-chart-bar" style="height: 70%;"></div>
+                                <div class="demo-chart-bar" style="height: 90%;"></div>
+                                <div class="demo-chart-bar" style="height: 60%;"></div>
+                            </div>
+                            <div class="demo-live-badge">
+                                <span class="demo-pulse"></span>
+                                Live Demo Available
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SOCIAL PROOF ================= -->
+    <section class="social-proof">
+        <div class="social-inner">
+
+            <div class="stat">
+                <div class="stat-number">500+</div>
+                <div class="stat-label">Reports Generated</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-number">50+</div>
+                <div class="stat-label">Teams Using ExecSlate</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-number">2 min</div>
+                <div class="stat-label">Average Setup Time</div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ================= CORE VALUE ================= -->
+    <section class="value">
+        <div class="value-inner">
+
+            <h2>Replace Weeks of Analysis With Minutes</h2>
+
+            <div class="value-grid">
+
+                <div class="value-card">
+                    <h3>Automated Financial Intelligence</h3>
+                    <p>
+                        Revenue trends, growth signals, volatility indicators,
+                        and performance diagnostics generated instantly.
+                    </p>
+                </div>
+
+                <div class="value-card">
+                    <h3>Dual-Mode Insight Engine</h3>
+                    <p>
+                        Statistical engine for instant reliability.
+                        AI-enhanced narratives for strategic depth.
+                    </p>
+                </div>
+
+                <div class="value-card">
+                    <h3>Board-Ready Outputs</h3>
+                    <p>
+                        Export PDF, Word, and PowerPoint outputs ready
+                        for leadership and stakeholders.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ================= HOW IT WORKS ================= -->
+    <section class="how">
+        <div class="how-inner">
+
+            <h2>How ExecSlate Works</h2>
+
+            <div class="how-grid">
+
+                <div class="how-step">
+                    <div class="step-number">1</div>
+                    <h3>Upload Data</h3>
+                    <p>Upload revenue or financial CSV files.</p>
+                </div>
+
+                <div class="how-step">
+                    <div class="step-number">2</div>
+                    <h3>Generate Intelligence</h3>
+                    <p>ExecSlate analyzes patterns and builds narratives.</p>
+                </div>
+
+                <div class="how-step">
+                    <div class="step-number">3</div>
+                    <h3>Export & Present</h3>
+                    <p>Download professional executive reports instantly.</p>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ================= USE CASES ================= -->
+    <section class="usecases">
+        <div class="usecases-inner">
+
+            <h2>Built For Decision Makers</h2>
+
+            <div class="usecases-grid">
+
+                <div class="usecase-card">
+                    <h3>Finance Teams</h3>
+                    <p>Revenue, cost & margin reports for the board — in minutes.</p>
+                </div>
+
+                <div class="usecase-card">
+                    <h3>Consulting Firms</h3>
+                    <p>Client-ready performance decks without manual analysis.</p>
+                </div>
+
+                <div class="usecase-card">
+                    <h3>Startups & Operators</h3>
+                    <p>Investor updates and KPI dashboards from raw metrics.</p>
+                </div>
+
+                <div class="usecase-card">
+                    <h3>Marketing Agencies</h3>
+                    <p>Campaign performance reports your clients will love.</p>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ================= FINAL CTA ================= -->
+    <section class="final-cta">
+
+        <div class="final-inner">
+
+            <h2>
+                Transform Raw Data Into Executive Decisions
+            </h2>
+
+            <p>
+                Start generating consulting-grade reports today.
+            </p>
+
+            <a href="/login" class="btn-primary large">
+                Start Free
+            </a>
+
+        </div>
+
+    </section>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="footer">
+
+        <div class="footer-inner">
+
+            <div class="footer-left">
+                © 2026 ExecSlate
+            </div>
+
+            <div class="footer-right">
+                <a href="/pricing">Pricing</a>
+                <a href="/login">Login</a>
+                <a href="mailto:support@execslate.com">Contact</a>
+            </div>
+
+        </div>
+
+    </footer>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode">
+        <span id="themeIcon">🌙</span>
+    </button>
+
+    <script src="{{ url_for('static', path='theme.js') }}"></script>
+    <script src="{{ url_for('static', path='toast.js') }}"></script>
+</body>
+
+</html>

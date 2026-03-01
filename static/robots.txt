@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /report/
+Disallow: /project/
+Disallow: /export/
+Disallow: /uploads/
+
+Sitemap: https://execslate.com/sitemap.xml
