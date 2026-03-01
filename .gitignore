@@ -21,9 +21,13 @@ Thumbs.db
 desktop.ini
 
 # ExecSlate Data (don't commit user data)
-uploads/
-exports/
-static/charts/
+uploads/*
+!uploads/.gitkeep
+exports/*.pdf
+exports/*.pptx
+exports/*.docx
+static/charts/*
+!static/charts/.gitkeep
 *.db
 
 # Environment / Secrets
