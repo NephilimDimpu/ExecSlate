@@ -34,7 +34,7 @@ from pptx.enum.chart import XL_CHART_TYPE
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 
-from passlib.context import CryptContext
+import bcrypt
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -138,18 +138,18 @@ PLAN_LIMITS = {
 client = True if ai_providers.is_ai_available() else None
 
 # ==================== PASSWORD HASHING ====================
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt (with truncation for passlib+bcrypt compat)"""
-    # bcrypt truncates to 72 bytes, but passlib 1.7.4 + newer bcrypt crashes if we don't truncate first
-    if len(password.encode('utf-8')) > 72:
-        password = password.encode('utf-8')[:72].decode('utf-8', 'ignore')
-    return pwd_context.hash(password)
+    """Hash a password using raw bcrypt"""
+    # bcrypt requires bytes
+    pwd_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed_bytes = bcrypt.hashpw(pwd_bytes, salt)
+    return hashed_bytes.decode('utf-8')
 
 def verify_password(password: str, hashed: str) -> bool:
     """Verify password against hash"""
-    return pwd_context.verify(password, hashed)
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 # ==================== FASTAPI APP SETUP ====================
 app = FastAPI(title="ExecSlate", version="1.0.0")

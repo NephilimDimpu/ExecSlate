@@ -11,6 +11,6 @@ openpyxl
 python-docx
 python-multipart
 itsdangerous
-passlib[bcrypt]
+bcrypt
 slowapi
 razorpay
