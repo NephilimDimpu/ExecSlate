@@ -156,10 +156,10 @@ def create_user(email, password_hash, plan='free', username=None):
         conn.close()
 
 def get_user_by_email(email):
-    """Get user by email"""
+    """Get user by email (case-insensitive)"""
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    cursor.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (email,))
     user = cursor.fetchone()
     conn.close()
     return dict(user) if user else None
