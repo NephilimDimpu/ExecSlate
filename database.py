@@ -143,7 +143,7 @@ def create_user(email, password_hash, plan='free', username=None):
     try:
         cursor.execute("""
             INSERT INTO users (email, username, password_hash, plan)
-            VALUES (?, ?, ?, ?)
+            VALUES (LOWER(?), ?, ?, ?)
         """, (email, username, password_hash, plan))
         conn.commit()
         user_id = cursor.lastrowid
