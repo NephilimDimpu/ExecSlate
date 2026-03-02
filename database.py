@@ -42,9 +42,20 @@ def init_db():
     # Migration: Check if users table has all required columns
     try:
         cursor.execute("PRAGMA table_info(users)")
-        user_columns = {row[1] for row in cursor.fetchall()}
-        required_columns = {'id', 'email', 'password_hash', 'plan', 'created_at', 'uploads', 'ai_used', 'ai_regens'}
-        # Add any missing columns (future-proof for migrations)
+        existing_user_columns = {row[1] for row in cursor.fetchall()}
+        
+        user_required_columns = {
+            'reset_token': 'TEXT',
+            'reset_token_expires': 'TIMESTAMP'
+        }
+        
+        for col_name, col_type in user_required_columns.items():
+            if col_name not in existing_user_columns:
+                try:
+                    cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}")
+                    logger.info(f"✅ Added missing column: users.{col_name}")
+                except Exception as e:
+                    logger.warning(f"Could not add column {col_name} to users: {e}")
     except Exception as e:
         logger.warning(f"Could not check user table schema: {e}")
     
@@ -186,6 +197,42 @@ def get_all_users():
     users = cursor.fetchall()
     conn.close()
     return [dict(u) for u in users]
+
+def set_reset_token(email, token, expiry):
+    """Set a password reset token for a user"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE users 
+        SET reset_token = ?, reset_token_expires = ?
+        WHERE email = ?
+    """, (token, expiry, email))
+    conn.commit()
+    conn.close()
+
+def get_user_by_reset_token(token):
+    """Get a valid user by their reset token"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT * FROM users 
+        WHERE reset_token = ? AND reset_token_expires > CURRENT_TIMESTAMP
+    """, (token,))
+    user = cursor.fetchone()
+    conn.close()
+    return dict(user) if user else None
+
+def update_user_password(user_id, new_password_hash):
+    """Update a user's password and clear the reset token"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE users 
+        SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL
+        WHERE id = ?
+    """, (new_password_hash, user_id))
+    conn.commit()
+    conn.close()
 
 def get_all_projects():
     """Get all projects across all users (for admin dashboard)"""

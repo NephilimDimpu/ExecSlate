@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExecSlate — Reset Link Sent</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='dark-theme.css') }}">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class="login-container">
+        <div class="login-card fade-in" style="text-align: center;">
+
+            <div style="font-size: 3rem; margin-bottom: 1rem;">✉️</div>
+            <h1>Check Your Email</h1>
+            <p style="margin-bottom: 2rem;">If an account exists for <strong>{{ email }}</strong>, you will receive
+                password reset instructions.</p>
+
+            {% if reset_link %}
+            <div class="info-card"
+                style="background: var(--blue-bg, #e8f0fe); padding: 1.5rem; border-radius: 8px; border: 1px solid #4285f4; margin-bottom: 2rem; text-align: left;">
+                <strong>System Notice:</strong> Since this app doesn't have an email server configured yet, here is your
+                simulated password reset link:<br><br>
+                <a href="{{ reset_link }}" style="word-break: break-all; color: #1a73e8; font-weight: 500;">{{
+                    reset_link }}</a>
+            </div>
+            {% endif %}
+
+            <div class="login-link-row" style="margin-top: 2rem;">
+                <a href="/login" class="btn-primary large">Return to Login</a>
+            </div>
+
+        </div>
+    </div>
+
+    <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode">
+        <span id="themeIcon">🌙</span>
+    </button>
+
+    <script src="{{ url_for('static', path='theme.js') }}"></script>
+</body>
+
+</html>
