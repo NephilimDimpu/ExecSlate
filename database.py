@@ -76,6 +76,9 @@ def init_db():
             chart_narratives TEXT,
             available_columns TEXT,
             column_map TEXT,
+            kpi_metrics TEXT,
+            primary_kpi TEXT,
+            report_title TEXT,
             last_uploaded_file TEXT,
             report_type TEXT DEFAULT 'statistical',
             generated BOOLEAN DEFAULT 0,
@@ -97,6 +100,9 @@ def init_db():
             'chart_narratives': 'TEXT',
             'available_columns': 'TEXT',
             'column_map': 'TEXT',
+            'kpi_metrics': 'TEXT',
+            'primary_kpi': 'TEXT',
+            'report_title': 'TEXT',
             'last_uploaded_file': 'TEXT'
         }
         
@@ -229,7 +235,7 @@ def get_project(project_id, user_id):
     project_dict = dict(project)
     json_fields = ['revenue_series', 'region_labels', 'region_values', 
                    'ai_insights', 'ai_recommendations', 'ai_qa', 
-                   'chart_narratives', 'available_columns', 'column_map']
+                   'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics']
                    
     for field in json_fields:
         if project_dict.get(field):
@@ -256,7 +262,7 @@ def get_user_projects(user_id):
     project_list = []
     json_fields = ['revenue_series', 'region_labels', 'region_values', 
                    'ai_insights', 'ai_recommendations', 'ai_qa', 
-                   'chart_narratives', 'available_columns', 'column_map']
+                   'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics']
                    
     for project in projects:
         project_dict = dict(project)
@@ -279,7 +285,7 @@ def update_project(project_id, user_id, **kwargs):
     # Serialize JSON fields
     json_fields = ['revenue_series', 'region_labels', 'region_values', 
                    'ai_insights', 'ai_recommendations', 'ai_qa', 
-                   'chart_narratives', 'available_columns', 'column_map']
+                   'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics']
                    
     for field in json_fields:
         if field in kwargs and kwargs[field] is not None:

@@ -1984,11 +1984,18 @@ async def regenerate_ai(pid: int, request: Request, analysis_type: str = Form("s
     project["ai_recommendations"] = insights["recommendations"]
     project["ai_qa"] = insights["qa"]
     project["report_type"] = insights.get("type", "statistical")
-    project["error"] = project.get("error")  # Preserve any error set above
-
     # Persist changes to DB if applicable
     if "id" in user:
-        db.update_project(pid, user["id"], **project)
+        db_safe_fields = {
+            'ai_summary': project.get('ai_summary'),
+            'ai_insights': project.get('ai_insights'),
+            'ai_recommendations': project.get('ai_recommendations'),
+            'ai_qa': project.get('ai_qa'),
+            'report_type': project.get('report_type', 'statistical'),
+            'error': project.get('error'),
+        }
+        db_safe_fields = {k: v for k, v in db_safe_fields.items() if v is not None}
+        db.update_project(pid, user["id"], **db_safe_fields)
 
     return RedirectResponse(f"/report/{pid}", status_code=303)
 
