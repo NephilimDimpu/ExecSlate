@@ -111,11 +111,11 @@
 
 
         <!-- ================= USAGE PROGRESS BARS ================= -->
-        <section class="usage-progress-grid">
+        <section class="usage-progress-grid admin-metrics-grid">
 
             <!-- Uploads -->
-            <div class="usage-progress-item">
-                <div class="usage-progress-header">
+            <div class="usage-progress-item admin-metric-card">
+                <div class="usage-progress-header admin-metric-title">
                     <span class="usage-progress-label">📂 Data Uploads</span>
                     <span class="usage-progress-count">
                         {{ stats.uploads_used }}
@@ -147,8 +147,8 @@
             </div>
 
             <!-- AI Generations -->
-            <div class="usage-progress-item">
-                <div class="usage-progress-header">
+            <div class="usage-progress-item admin-metric-card">
+                <div class="usage-progress-header admin-metric-title">
                     <span class="usage-progress-label">✨ AI Generations</span>
                     <span class="usage-progress-count">
                         {{ stats.ai_generations_used }}
@@ -179,8 +179,8 @@
             </div>
 
             <!-- AI Regenerations -->
-            <div class="usage-progress-item">
-                <div class="usage-progress-header">
+            <div class="usage-progress-item admin-metric-card">
+                <div class="usage-progress-header admin-metric-title">
                     <span class="usage-progress-label">🔄 AI Regenerations</span>
                     <span class="usage-progress-count">
                         {{ stats.ai_regens_used }}
