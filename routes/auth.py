@@ -85,14 +85,14 @@ def setup(app_module):
     @limiter.limit("5/minute")
     async def register(
         request: Request,
-        username: str = Form(...),
+        username: str = Form(None),
         email: str = Form(...),
         password: str = Form(...),
         confirm_password: str = Form(...),
         selected_plan: str = Form('free')
     ):
         email = email.lower().strip()
-        username = username.strip()
+        username = username.strip() if username else ""
         
         # 1. Validate Email Format
         email_regex = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
