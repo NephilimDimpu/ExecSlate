@@ -107,7 +107,8 @@ def setup(app_module):
         # A basic list of known fake/abusive/disposable domains to reject
         blocked_domains = [
             "mailinator.com", "10minutemail.com", "guerrillamail.com", 
-            "tempmail.com", "suckmynut.com", "dropmail.me", "yopmail.com"
+            "tempmail.com", "suckmynut.com", "dropmail.me", "yopmail.com",
+            "staryeye.com", "staryeyes.com"
         ]
         domain = email.split('@')[-1]
         
