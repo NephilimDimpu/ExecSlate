@@ -36,7 +36,7 @@
                 </button>
 
                 <div class="nav-right" id="navRight">
-                    <span class="nav-user">{{ user.email }}</span>
+                    <span class="nav-user">{{ user.username if user.username else user.email }}</span>
                     <span class="plan-badge plan-{{ user.plan }}">{{ user.plan | upper }}</span>
 
                     {% if user.email == 'admin@execslate.com' %}

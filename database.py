@@ -30,6 +30,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT UNIQUE NOT NULL,
+            username TEXT,
             password_hash TEXT NOT NULL,
             plan TEXT DEFAULT 'free',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -45,6 +46,7 @@ def init_db():
         existing_user_columns = {row[1] for row in cursor.fetchall()}
         
         user_required_columns = {
+            'username': 'TEXT',
             'reset_token': 'TEXT',
             'reset_token_expires': 'TIMESTAMP'
         }
@@ -134,18 +136,18 @@ def init_db():
 
 # ==================== USER OPERATIONS ====================
 
-def create_user(email, password_hash, plan='free'):
+def create_user(email, password_hash, plan='free', username=None):
     """Create a new user"""
     conn = get_db()
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            INSERT INTO users (email, password_hash, plan)
-            VALUES (?, ?, ?)
-        """, (email, password_hash, plan))
+            INSERT INTO users (email, username, password_hash, plan)
+            VALUES (?, ?, ?, ?)
+        """, (email, username, password_hash, plan))
         conn.commit()
         user_id = cursor.lastrowid
-        logger.info(f"✅ Created user: {email} (ID: {user_id})")
+        logger.info(f"✅ Created user: {email} (ID: {user_id}, Username: {username})")
         return user_id
     except sqlite3.IntegrityError:
         logger.warning(f"⚠️ User already exists: {email}")

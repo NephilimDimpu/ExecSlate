@@ -51,12 +51,16 @@
             {% endif %}
 
             <form method="post" action="/register" class="login-form">
-                <!-- Pass the selected plan through -->
-                <input type="hidden" name="selected_plan" value="{{ plan or 'free' }}">
+                <input type="hidden" name="selected_plan" value="{{ plan if plan else 'free' }}">
 
                 <div>
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" placeholder="your@email.com" required autofocus>
+                    <label for="username">Username (Optional)</label>
+                    <input type="text" id="username" name="username" placeholder="e.g. John Doe">
+                </div>
+
+                <div>
+                    <label for="email">Work Email</label>
+                    <input type="email" id="email" name="email" placeholder="you@company.com" required autofocus>
                 </div>
 
                 <div>

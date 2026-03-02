@@ -41,6 +41,7 @@ def setup(app_module):
         if user and verify_password(password, user["password_hash"]):
             request.session["user"] = {
                 "id": user["id"],
+                "username": user.get("username", email.split('@')[0]),
                 "email": user["email"],
                 "plan": user["plan"],
                 "is_admin": False
@@ -53,6 +54,7 @@ def setup(app_module):
         if demo_user and verify_password(password, demo_user["password"]):
             request.session["user"] = {
                 "email": demo_user["email"],
+                "username": demo_user.get("username", email.split('@')[0]),
                 "plan": demo_user["plan"],
                 "is_admin": demo_user.get("is_admin", False)
             }
@@ -82,6 +84,7 @@ def setup(app_module):
     @limiter.limit("5/minute")
     async def register(
         request: Request,
+        username: str = Form(...),
         email: str = Form(...),
         password: str = Form(...),
         confirm_password: str = Form(...),
@@ -89,6 +92,7 @@ def setup(app_module):
     ):
         """Handle user registration"""
         email = email.lower()
+        username = username.strip()
         # Validate the selected plan
         valid_plans = ['free', 'pro', 'business']
         if selected_plan not in valid_plans:
@@ -117,7 +121,7 @@ def setup(app_module):
             })
 
         password_hash = hash_password(password)
-        user_id = db.create_user(email, password_hash, plan='free')
+        user_id = db.create_user(email, password_hash, plan='free', username=username)
 
         if not user_id:
             return templates.TemplateResponse("register.html", {
@@ -127,12 +131,13 @@ def setup(app_module):
 
         request.session["user"] = {
             "id": user_id,
+            "username": username,
             "email": email,
             "plan": "free",
             "is_admin": False
         }
 
-        log(f"New user registered: {email} (selected plan: {selected_plan})")
+        log(f"New user registered: {username} ({email}) - plan: {selected_plan}")
 
         # If they selected a paid plan, redirect to pricing to complete payment
         if selected_plan in ('pro', 'business'):
@@ -245,6 +250,7 @@ def setup(app_module):
         """Auto-login as demo user"""
         request.session["user"] = {
             "email": "demo@execslate.ai",
+            "username": "Demo User",
             "plan": "demo",
             "is_admin": False
         }
