@@ -4,6 +4,7 @@
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import RedirectResponse
 import secrets
+import re
 from datetime import datetime, timedelta
 
 router = APIRouter(tags=["auth"])
@@ -90,9 +91,34 @@ def setup(app_module):
         confirm_password: str = Form(...),
         selected_plan: str = Form('free')
     ):
-        """Handle user registration"""
-        email = email.lower()
+        email = email.lower().strip()
         username = username.strip()
+        
+        # 1. Validate Email Format
+        email_regex = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+        if not email_regex.match(email):
+            return templates.TemplateResponse("register.html", {
+                "request": request,
+                "error": "Please enter a valid email address format.",
+                "plan": selected_plan if selected_plan != 'free' else None
+            })
+            
+        # 2. Block Disposable / Fake Domains
+        # A basic list of known fake/abusive/disposable domains to reject
+        blocked_domains = [
+            "mailinator.com", "10minutemail.com", "guerrillamail.com", 
+            "tempmail.com", "suckmynut.com", "dropmail.me", "yopmail.com"
+        ]
+        domain = email.split('@')[-1]
+        
+        # We also block domains containing offensive words or temporary patterns
+        if domain in blocked_domains or "suck" in domain or "temp" in domain.split('.')[0]:
+            return templates.TemplateResponse("register.html", {
+                "request": request,
+                "error": "Registration is not permitted with this email provider. Please use a valid work or personal email.",
+                "plan": selected_plan if selected_plan != 'free' else None
+            })
+
         # Validate the selected plan
         valid_plans = ['free', 'pro', 'business']
         if selected_plan not in valid_plans:
