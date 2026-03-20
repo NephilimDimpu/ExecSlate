@@ -14,3 +14,9 @@ itsdangerous
 bcrypt
 slowapi
 razorpay
+sqlalchemy
+psycopg2-binary
+resend
+langchain
+langchain-experimental
+langchain-openai

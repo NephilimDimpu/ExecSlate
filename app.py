@@ -154,6 +154,9 @@ def verify_password(password: str, hashed: str) -> bool:
 # ==================== FASTAPI APP SETUP ====================
 app = FastAPI(title="ExecSlate", version="1.0.0")
 
+import payments
+app.include_router(payments.router)
+
 # Add session middleware
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, max_age=86400)
 
@@ -1260,6 +1263,7 @@ from routes import auth as auth_routes
 from routes import exports as export_routes
 from routes import admin as admin_routes
 from routes import payments as payment_routes
+from routes import agent as agent_routes
 
 # Wire shared state into route modules
 _this = sys.modules[__name__]
@@ -1267,14 +1271,16 @@ auth_routes.setup(_this)
 export_routes.setup(_this)
 admin_routes.setup(_this)
 payment_routes.setup(_this)
+agent_routes.setup(_this)
 
 # Include routers
 app.include_router(auth_routes.router)
 app.include_router(export_routes.router)
 app.include_router(admin_routes.router)
 app.include_router(payment_routes.router)
+app.include_router(agent_routes.router)
 
-logger.info("✅ Modular routes loaded: auth, exports, admin, payments")
+logger.info("✅ Modular routes loaded: auth, exports, admin, payments, agent")
 
 # ==================== MAIN ROUTES ====================
 

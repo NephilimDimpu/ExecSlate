@@ -6,6 +6,7 @@ from fastapi.responses import RedirectResponse
 import secrets
 import re
 from datetime import datetime, timedelta
+import email_service
 
 router = APIRouter(tags=["auth"])
 
@@ -165,6 +166,12 @@ def setup(app_module):
         }
 
         log(f"New user registered: {username} ({email}) - plan: {selected_plan}")
+        
+        # Dispatch Welcome Email
+        try:
+            email_service.send_welcome_email(email)
+        except Exception as e:
+            log(f"Failed to send welcome email to {email}: {e}")
 
         # If they selected a paid plan, redirect to pricing to complete payment
         if selected_plan in ('pro', 'business'):
@@ -189,15 +196,17 @@ def setup(app_module):
             expiry = (datetime.utcnow() + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
             db.set_reset_token(email, token, expiry)
             
-            # Since we don't have an email system, we simulate sending it
-            # by showing the reset link directly on the next page
-            reset_link = f"{request.base_url}reset-password?token={token}"
-            log(f"Password reset requested for {email} - Token generated")
+            host = request.headers.get("host", "app.execslate.com")
+            
+            try:
+                email_service.send_password_reset(email, token, host)
+                log(f"Password reset email dispatched to {email}")
+            except Exception as e:
+                log(f"Failed to send reset email: {e}")
             
             return templates.TemplateResponse("reset_sent.html", {
                 "request": request, 
-                "email": email,
-                "reset_link": reset_link
+                "email": email
             })
             
         # Also show success if user not found to prevent email enumeration

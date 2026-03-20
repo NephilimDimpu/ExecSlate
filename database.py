@@ -1,377 +1,261 @@
 """
 ExecSlate Database Module
-SQLite-based persistence for users and projects
+SQLAlchemy ORM version (PostgreSQL & SQLite compatible)
 """
 
-import sqlite3
+import os
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
-import logging
+
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, Float, DateTime, ForeignKey, Text
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy.sql import func
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 
-# Database file location
-DB_FILE = Path(__file__).parent / "execslate.db"
+# Use DATABASE_URL from env (PostgreSQL), fallback to local sqlite
+DB_URL = os.getenv("DATABASE_URL", f"sqlite:///{Path(__file__).parent / 'execslate.db'}")
 
-def get_db():
-    """Get database connection"""
-    conn = sqlite3.connect(str(DB_FILE))
-    conn.row_factory = sqlite3.Row  # Return rows as dictionaries
-    return conn
+# SQLite specific args
+connect_args = {"check_same_thread": False} if "sqlite" in DB_URL else {}
+engine = create_engine(DB_URL, connect_args=connect_args)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# ==================== ORM MODELS ====================
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    username = Column(String)
+    password_hash = Column(String, nullable=False)
+    plan = Column(String, default='free')
+    created_at = Column(DateTime, server_default=func.now())
+    uploads = Column(Integer, default=0)
+    ai_used = Column(Boolean, default=False)
+    ai_regens = Column(Integer, default=0)
+    reset_token = Column(String)
+    reset_token_expires = Column(DateTime)
+    
+class Project(Base):
+    __tablename__ = "projects"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    client = Column(String, nullable=False)
+    period = Column(String)
+    currency = Column(String, default='$')
+    total_revenue = Column(Float, default=0.0)
+    avg_revenue = Column(Float, default=0.0)
+    median_revenue = Column(Float, default=0.0)
+    growth_rate = Column(Float, default=0.0)
+    trend = Column(String)
+    top_region = Column(String)
+    row_count = Column(Integer, default=0)
+    confidence = Column(Integer, default=0)
+    
+    # Text types for JSON storage
+    revenue_series = Column(Text)
+    region_labels = Column(Text)
+    region_values = Column(Text)
+    ai_summary = Column(Text)
+    ai_insights = Column(Text)
+    ai_recommendations = Column(Text)
+    ai_qa = Column(Text)
+    revenue_chart = Column(String)
+    region_chart = Column(String)
+    chart_narratives = Column(Text)
+    available_columns = Column(Text)
+    column_map = Column(Text)
+    kpi_metrics = Column(Text)
+    primary_kpi = Column(String)
+    report_title = Column(String)
+    last_uploaded_file = Column(String)
+    report_type = Column(String, default='statistical')
+    generated = Column(Boolean, default=False)
+    error = Column(String)
+    created_at = Column(DateTime, server_default=func.now())
+
+# ==================== HELPERS ====================
 
 def init_db():
-    """Initialize database with schema"""
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    # Create users table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            username TEXT,
-            password_hash TEXT NOT NULL,
-            plan TEXT DEFAULT 'free',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            uploads INTEGER DEFAULT 0,
-            ai_used BOOLEAN DEFAULT 0,
-            ai_regens INTEGER DEFAULT 0
-        )
-    """)
-    
-    # Migration: Check if users table has all required columns
-    try:
-        cursor.execute("PRAGMA table_info(users)")
-        existing_user_columns = {row[1] for row in cursor.fetchall()}
+    Base.metadata.create_all(bind=engine)
+    db_type = "PostgreSQL" if "postgres" in DB_URL else "SQLite"
+    logger.info(f"✅ Database initialized ({db_type})")
+
+def _user_to_dict(user):
+    if not user:
+        return None
+    return {
+        "id": user.id,
+        "email": user.email,
+        "username": user.username,
+        "password_hash": user.password_hash,
+        "plan": user.plan,
+        "created_at": user.created_at,
+        "uploads": user.uploads,
+        "ai_used": 1 if user.ai_used else 0,
+        "ai_regens": user.ai_regens,
+        "reset_token": user.reset_token,
+        "reset_token_expires": user.reset_token_expires
+    }
+
+def _project_to_dict(proj, include_user_email=False):
+    if not proj:
+        return None
         
-        user_required_columns = {
-            'username': 'TEXT',
-            'reset_token': 'TEXT',
-            'reset_token_expires': 'TIMESTAMP'
-        }
-        
-        for col_name, col_type in user_required_columns.items():
-            if col_name not in existing_user_columns:
-                try:
-                    cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}")
-                    logger.info(f"✅ Added missing column: users.{col_name}")
-                except Exception as e:
-                    logger.warning(f"Could not add column {col_name} to users: {e}")
-    except Exception as e:
-        logger.warning(f"Could not check user table schema: {e}")
+    p_obj = proj[0] if isinstance(proj, tuple) else proj
+    p_dict = {
+        "id": p_obj.id,
+        "user_id": p_obj.user_id,
+        "client": p_obj.client,
+        "period": p_obj.period,
+        "currency": p_obj.currency,
+        "total_revenue": p_obj.total_revenue,
+        "avg_revenue": p_obj.avg_revenue,
+        "median_revenue": p_obj.median_revenue,
+        "growth_rate": p_obj.growth_rate,
+        "trend": p_obj.trend,
+        "top_region": p_obj.top_region,
+        "row_count": p_obj.row_count,
+        "confidence": p_obj.confidence,
+        "revenue_chart": p_obj.revenue_chart,
+        "region_chart": p_obj.region_chart,
+        "primary_kpi": p_obj.primary_kpi,
+        "report_title": p_obj.report_title,
+        "last_uploaded_file": p_obj.last_uploaded_file,
+        "report_type": p_obj.report_type,
+        "generated": 1 if p_obj.generated else 0,
+        "error": p_obj.error,
+        "created_at": p_obj.created_at,
+    }
     
-    # Create projects table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS projects (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            client TEXT NOT NULL,
-            period TEXT,
-            currency TEXT DEFAULT '$',
-            total_revenue REAL DEFAULT 0,
-            avg_revenue REAL DEFAULT 0,
-            median_revenue REAL DEFAULT 0,
-            growth_rate REAL DEFAULT 0,
-            trend TEXT,
-            top_region TEXT,
-            row_count INTEGER DEFAULT 0,
-            confidence INTEGER DEFAULT 0,
-            revenue_series TEXT,
-            region_labels TEXT,
-            region_values TEXT,
-            ai_summary TEXT,
-            ai_insights TEXT,
-            ai_recommendations TEXT,
-            ai_qa TEXT,
-            revenue_chart TEXT,
-            region_chart TEXT,
-            chart_narratives TEXT,
-            available_columns TEXT,
-            column_map TEXT,
-            kpi_metrics TEXT,
-            primary_kpi TEXT,
-            report_title TEXT,
-            last_uploaded_file TEXT,
-            report_type TEXT DEFAULT 'statistical',
-            generated BOOLEAN DEFAULT 0,
-            error TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-    """)
-    
-    # Migration: Add missing columns to existing projects table
-    try:
-        cursor.execute("PRAGMA table_info(projects)")
-        existing_columns = {row[1] for row in cursor.fetchall()}
-        
-        # List of columns that should exist
-        required_columns = {
-            'revenue_chart': 'TEXT',
-            'region_chart': 'TEXT', 
-            'chart_narratives': 'TEXT',
-            'available_columns': 'TEXT',
-            'column_map': 'TEXT',
-            'kpi_metrics': 'TEXT',
-            'primary_kpi': 'TEXT',
-            'report_title': 'TEXT',
-            'last_uploaded_file': 'TEXT'
-        }
-        
-        # Add any missing columns
-        for col_name, col_type in required_columns.items():
-            if col_name not in existing_columns:
-                try:
-                    cursor.execute(f"ALTER TABLE projects ADD COLUMN {col_name} {col_type}")
-                    logger.info(f"✅ Added missing column: projects.{col_name}")
-                except Exception as e:
-                    logger.warning(f"Could not add column {col_name}: {e}")
-    except Exception as e:
-        logger.warning(f"Could not check projects table schema: {e}")
-    
-    conn.commit()
-    conn.close()
-    logger.info(f"✅ Database initialized at {DB_FILE}")
+    if include_user_email and isinstance(proj, tuple) and len(proj) > 1:
+        p_dict["user_email"] = proj[1]
+
+    json_fields = ['revenue_series', 'region_labels', 'region_values', 
+                   'ai_insights', 'ai_recommendations', 'ai_qa', 
+                   'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics']
+                   
+    for field in json_fields:
+        val = getattr(p_obj, field)
+        if val:
+            try:
+                p_dict[field] = json.loads(val)
+            except:
+                p_dict[field] = None
+        else:
+            p_dict[field] = None
+            
+    p_dict["ai_summary"] = p_obj.ai_summary
+            
+    return p_dict
 
 # ==================== USER OPERATIONS ====================
 
 def create_user(email, password_hash, plan='free', username=None):
-    """Create a new user"""
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-            INSERT INTO users (email, username, password_hash, plan)
-            VALUES (LOWER(?), ?, ?, ?)
-        """, (email, username, password_hash, plan))
-        conn.commit()
-        user_id = cursor.lastrowid
-        logger.info(f"✅ Created user: {email} (ID: {user_id}, Username: {username})")
-        return user_id
-    except sqlite3.IntegrityError:
-        logger.warning(f"⚠️ User already exists: {email}")
-        return None
-    finally:
-        conn.close()
+    with SessionLocal() as db:
+        user = User(email=email.lower(), username=username, password_hash=password_hash, plan=plan)
+        try:
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            logger.info(f"✅ Created user: {email} (ID: {user.id})")
+            return user.id
+        except Exception as e:
+            db.rollback()
+            logger.warning(f"⚠️ User already exists or error: {e}")
+            return None
 
 def get_user_by_email(email):
-    """Get user by email (case-insensitive)"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (email,))
-    user = cursor.fetchone()
-    conn.close()
-    return dict(user) if user else None
+    with SessionLocal() as db:
+        user = db.query(User).filter(func.lower(User.email) == email.lower()).first()
+        return _user_to_dict(user)
 
 def get_user_by_id(user_id):
-    """Get user by ID"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-    user = cursor.fetchone()
-    conn.close()
-    return dict(user) if user else None
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.id == user_id).first()
+        return _user_to_dict(user)
 
 def update_user_stats(user_id, **kwargs):
-    """Update user statistics (uploads, ai_used, ai_regens)"""
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    # Build dynamic UPDATE query
-    fields = ", ".join([f"{key} = ?" for key in kwargs.keys()])
-    values = list(kwargs.values()) + [user_id]
-    
-    cursor.execute(f"""
-        UPDATE users
-        SET {fields}
-        WHERE id = ?
-    """, values)
-    
-    conn.commit()
-    conn.close()
+    with SessionLocal() as db:
+        db.query(User).filter(User.id == user_id).update(kwargs)
+        db.commit()
 
 def get_all_users():
-    """Get all registered users (for admin dashboard)"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users ORDER BY created_at DESC")
-    users = cursor.fetchall()
-    conn.close()
-    return [dict(u) for u in users]
+    with SessionLocal() as db:
+        users = db.query(User).order_by(User.created_at.desc()).all()
+        return [_user_to_dict(u) for u in users]
 
 def set_reset_token(email, token, expiry):
-    """Set a password reset token for a user"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE users 
-        SET reset_token = ?, reset_token_expires = ?
-        WHERE email = ?
-    """, (token, expiry, email))
-    conn.commit()
-    conn.close()
+    with SessionLocal() as db:
+        db.query(User).filter(User.email == email).update({"reset_token": token, "reset_token_expires": expiry})
+        db.commit()
 
 def get_user_by_reset_token(token):
-    """Get a valid user by their reset token"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT * FROM users 
-        WHERE reset_token = ? AND reset_token_expires > CURRENT_TIMESTAMP
-    """, (token,))
-    user = cursor.fetchone()
-    conn.close()
-    return dict(user) if user else None
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.reset_token == token, User.reset_token_expires > datetime.now()).first()
+        return _user_to_dict(user)
 
 def update_user_password(user_id, new_password_hash):
-    """Update a user's password and clear the reset token"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE users 
-        SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL
-        WHERE id = ?
-    """, (new_password_hash, user_id))
-    conn.commit()
-    conn.close()
-
-def get_all_projects():
-    """Get all projects across all users (for admin dashboard)"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT p.*, u.email as user_email 
-        FROM projects p 
-        JOIN users u ON p.user_id = u.id 
-        ORDER BY p.created_at DESC
-    """)
-    projects = cursor.fetchall()
-    conn.close()
-    return [dict(p) for p in projects]
+    with SessionLocal() as db:
+        db.query(User).filter(User.id == user_id).update({"password_hash": new_password_hash, "reset_token": None, "reset_token_expires": None})
+        db.commit()
 
 # ==================== PROJECT OPERATIONS ====================
 
+def get_all_projects():
+    with SessionLocal() as db:
+        projects = db.query(Project, User.email).join(User, Project.user_id == User.id).order_by(Project.created_at.desc()).all()
+        return [_project_to_dict(p, include_user_email=True) for p in projects]
+
 def create_project(user_id, client, period=""):
-    """Create a new project"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO projects (user_id, client, period)
-        VALUES (?, ?, ?)
-    """, (user_id, client, period))
-    conn.commit()
-    project_id = cursor.lastrowid
-    conn.close()
-    logger.info(f"✅ Created project: {client} (ID: {project_id}) for user {user_id}")
-    return project_id
+    with SessionLocal() as db:
+        proj = Project(user_id=user_id, client=client, period=period)
+        db.add(proj)
+        db.commit()
+        db.refresh(proj)
+        logger.info(f"✅ Created project: {client} (ID: {proj.id}) for user {user_id}")
+        return proj.id
 
 def get_project(project_id, user_id):
-    """Get a project by ID (with ownership check)"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT * FROM projects 
-        WHERE id = ? AND user_id = ?
-    """, (project_id, user_id))
-    project = cursor.fetchone()
-    conn.close()
-    
-    if not project:
-        return None
-    
-    # Convert to dict and deserialize JSON fields
-    project_dict = dict(project)
-    json_fields = ['revenue_series', 'region_labels', 'region_values', 
-                   'ai_insights', 'ai_recommendations', 'ai_qa', 
-                   'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics']
-                   
-    for field in json_fields:
-        if project_dict.get(field):
-            try:
-                project_dict[field] = json.loads(project_dict[field])
-            except:
-                project_dict[field] = None
-    
-    return project_dict
+    with SessionLocal() as db:
+        proj = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id).first()
+        return _project_to_dict(proj)
 
 def get_user_projects(user_id):
-    """Get all projects for a user"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT * FROM projects 
-        WHERE user_id = ?
-        ORDER BY created_at DESC
-    """, (user_id,))
-    projects = cursor.fetchall()
-    conn.close()
-    
-    # Convert to list of dicts
-    project_list = []
-    json_fields = ['revenue_series', 'region_labels', 'region_values', 
-                   'ai_insights', 'ai_recommendations', 'ai_qa', 
-                   'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics']
-                   
-    for project in projects:
-        project_dict = dict(project)
-        # Deserialize JSON fields
-        for field in json_fields:
-            if project_dict.get(field):
-                try:
-                    project_dict[field] = json.loads(project_dict[field])
-                except:
-                    project_dict[field] = None
-        project_list.append(project_dict)
-    
-    return project_list
+    with SessionLocal() as db:
+        projects = db.query(Project).filter(Project.user_id == user_id).order_by(Project.created_at.desc()).all()
+        return [_project_to_dict(p) for p in projects]
 
 def update_project(project_id, user_id, **kwargs):
-    """Update project data"""
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    # Serialize JSON fields
-    json_fields = ['revenue_series', 'region_labels', 'region_values', 
-                   'ai_insights', 'ai_recommendations', 'ai_qa', 
-                   'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics']
-                   
-    for field in json_fields:
-        if field in kwargs and kwargs[field] is not None:
-            kwargs[field] = json.dumps(kwargs[field])
-    
-    # Build dynamic UPDATE query
-    fields = ", ".join([f"{key} = ?" for key in kwargs.keys()])
-    values = list(kwargs.values()) + [project_id, user_id]
-    
-    cursor.execute(f"""
-        UPDATE projects
-        SET {fields}
-        WHERE id = ? AND user_id = ?
-    """, values)
-    
-    conn.commit()
-    rows_affected = cursor.rowcount
-    conn.close()
-    
-    return rows_affected > 0
+    with SessionLocal() as db:
+        json_fields = ['revenue_series', 'region_labels', 'region_values', 
+                       'ai_insights', 'ai_recommendations', 'ai_qa', 
+                       'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics']
+        
+        upd = {}
+        for k, v in kwargs.items():
+            if k in json_fields and v is not None:
+                upd[k] = json.dumps(v)
+            else:
+                upd[k] = v
+                
+        affected = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id).update(upd)
+        db.commit()
+        return affected > 0
 
 def delete_project(project_id, user_id):
-    """Delete a project (with ownership check)"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        DELETE FROM projects 
-        WHERE id = ? AND user_id = ?
-    """, (project_id, user_id))
-    conn.commit()
-    rows_affected = cursor.rowcount
-    conn.close()
-    
-    if rows_affected > 0:
-        logger.info(f"✅ Deleted project {project_id}")
-        return True
-    return False
+    with SessionLocal() as db:
+        affected = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id).delete()
+        db.commit()
+        if affected > 0:
+            logger.info(f"✅ Deleted project {project_id}")
+            return True
+        return False
 
 # Initialize database on module import
 init_db()
