@@ -70,53 +70,56 @@ class _PDFWithHeaderFooter(SimpleDocTemplate):
         canvas.line(50, 42, w - 50, 42)
 
         # Left: confidential
-        canvas.setFont("Helvetica", 7)
+        canvas.setFont("Helvetica-Bold", 8)
         canvas.setFillColor(_hex("gray"))
-        canvas.drawString(50, 30, "CONFIDENTIAL — For Internal Use Only")
+        canvas.drawString(50, 30, "STRICTLY CONFIDENTIAL")
 
         # Center: page
-        canvas.drawCentredString(w / 2, 30, f"Page {page_num}")
+        canvas.setFont("Helvetica", 8)
+        canvas.drawCentredString(w / 2, 30, f"- {page_num} -")
 
         # Right: brand
-        canvas.drawRightString(w - 50, 30, "ExecSlate")
+        canvas.setFont("Helvetica-Bold", 8)
+        canvas.setFillColor(_hex("navy"))
+        canvas.drawRightString(w - 50, 30, "■ EXECSLATE")
 
         # Watermark for free
         if self._user_plan in ("free", "demo"):
             canvas.saveState()
-            canvas.setFont("Helvetica", 50)
-            canvas.setFillColor(colors.Color(0, 0, 0, alpha=0.04))
+            canvas.setFont("Helvetica-Bold", 60)
+            canvas.setFillColor(colors.Color(0, 0, 0, alpha=0.03))
             canvas.translate(w / 2, h / 2)
             canvas.rotate(45)
-            canvas.drawCentredString(0, 0, "ExecSlate Trial")
+            canvas.drawCentredString(0, 0, "DRAFT / TRIAL")
             canvas.restoreState()
 
 
 def _pdf_cover_page(Story, styles, project, currency):
     """Build a professional dark cover page."""
-    # Spacer to push content down
-    Story.append(Spacer(1, 120))
+    # Spacer to push content down for vertical centering (Premium feel)
+    Story.append(Spacer(1, 140))
 
-    # Brand mark
+    # Brand mark with Blue Accent Square
     brand_style = ParagraphStyle(
         'BrandMark', parent=styles['Normal'],
-        fontSize=14, textColor=_hex("accent"),
-        alignment=TA_CENTER, spaceAfter=8,
-        fontName='Helvetica'
+        fontSize=18, textColor=_hex("navy"),
+        alignment=TA_CENTER, spaceAfter=16,
+        fontName='Helvetica-Bold'
     )
-    Story.append(Paragraph("E X E C S L A T E", brand_style))
+    Story.append(Paragraph(f'<font color="{BRAND["accent"]}">■</font> &nbsp;E X E C S L A T E', brand_style))
 
-    # Divider
-    Story.append(Spacer(1, 10))
+    # Divider Line (Sleek minimalist)
+    Story.append(Spacer(1, 20))
     Story.append(HRFlowable(
-        width="40%", thickness=2, color=_hex("accent"),
-        spaceAfter=20, hAlign='CENTER'
+        width="20%", thickness=3, color=_hex("accent"),
+        spaceAfter=30, hAlign='CENTER'
     ))
 
     # Title
     title_style = ParagraphStyle(
         'CoverTitle', parent=styles['Heading1'],
-        fontSize=32, leading=38, alignment=TA_CENTER,
-        textColor=_hex("navy"), spaceAfter=12,
+        fontSize=36, leading=42, alignment=TA_CENTER,
+        textColor=_hex("navy"), spaceAfter=16,
         fontName='Helvetica-Bold'
     )
     Story.append(Paragraph(project.get('report_title', 'Executive Performance Report'), title_style))
@@ -124,8 +127,8 @@ def _pdf_cover_page(Story, styles, project, currency):
     # Client name
     client_style = ParagraphStyle(
         'CoverClient', parent=styles['Normal'],
-        fontSize=22, alignment=TA_CENTER,
-        textColor=_hex("slate"), spaceAfter=8,
+        fontSize=24, alignment=TA_CENTER,
+        textColor=_hex("slate"), spaceAfter=10,
         fontName='Helvetica'
     )
     Story.append(Paragraph(project.get('client', 'Client'), client_style))
@@ -133,46 +136,47 @@ def _pdf_cover_page(Story, styles, project, currency):
     # Period
     period_style = ParagraphStyle(
         'CoverPeriod', parent=styles['Normal'],
-        fontSize=14, alignment=TA_CENTER,
-        textColor=_hex("gray"), spaceAfter=40,
+        fontSize=16, alignment=TA_CENTER,
+        textColor=_hex("gray"), spaceAfter=50,
         fontName='Helvetica'
     )
     Story.append(Paragraph(project.get('period', ''), period_style))
 
-    # Divider
+    # Decorative Divider
     Story.append(HRFlowable(
-        width="60%", thickness=0.5, color=_hex("border"),
-        spaceAfter=30, hAlign='CENTER'
+        width="50%", thickness=1, color=_hex("border"),
+        spaceAfter=40, hAlign='CENTER'
     ))
 
-    # Meta info block
+    # Meta info block with subtle typography
     meta_style = ParagraphStyle(
         'CoverMeta', parent=styles['Normal'],
-        fontSize=10, alignment=TA_CENTER,
-        textColor=_hex("gray"), spaceAfter=6
+        fontSize=11, alignment=TA_CENTER,
+        textColor=_hex("gray"), spaceAfter=8,
+        fontName='Helvetica'
     )
     Story.append(Paragraph(
-        f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}",
+        f"<b>Prepared on:</b> {datetime.now().strftime('%B %d, %Y')}",
         meta_style
     ))
 
     report_type = project.get('report_type', 'statistical')
-    type_label = "AI-Enhanced Analysis" if report_type == "ai" else "Statistical Analysis"
-    Story.append(Paragraph(f"Analysis Type: {type_label}", meta_style))
+    type_label = "AI-Driven Strategic Analysis" if report_type == "ai" else "Quantitative Statistical Analysis"
+    Story.append(Paragraph(f"<b>Engagement Type:</b> {type_label}", meta_style))
 
     total = project.get('total_revenue', 0)
     Story.append(Paragraph(
-        f"Total Revenue Analyzed: {currency}{total:,.0f}", meta_style
+        f"<b>Scope:</b> {currency}{total:,.0f} Analyzed", meta_style
     ))
 
-    # Confidential badge
-    Story.append(Spacer(1, 50))
+    # Confidential badge - moved to footer natively
+    Story.append(Spacer(1, 80))
     conf_style = ParagraphStyle(
         'Confidential', parent=styles['Normal'],
-        fontSize=9, alignment=TA_CENTER,
+        fontSize=10, alignment=TA_CENTER,
         textColor=_hex("gray"), fontName='Helvetica-Bold'
     )
-    Story.append(Paragraph("━━━  CONFIDENTIAL  ━━━", conf_style))
+    Story.append(Paragraph("STRICTLY CONFIDENTIAL", conf_style))
 
     Story.append(PageBreak())
 
@@ -308,11 +312,13 @@ def export_pdf_enhanced(project, output_path, user_plan="free"):
         ('TEXTCOLOR', (0, 0), (-1, 0), _hex("white")),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-        ('TOPPADDING', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
         ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-        ('GRID', (0, 0), (-1, -1), 0.5, _hex("border")),
+        ('LINEABOVE', (0, 0), (-1, 0), 1.5, _hex("navy")),
+        ('LINEBELOW', (0, 0), (-1, 0), 1.5, _hex("accent")),
+        ('LINEBELOW', (0, 1), (-1, -1), 0.5, _hex("border")),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [_hex("white"), _hex("lighter")]),
     ]))
     Story.append(t)
@@ -358,10 +364,12 @@ def export_pdf_enhanced(project, output_path, user_plan="free"):
                         ('TEXTCOLOR', (0, 0), (-1, 0), _hex("white")),
                         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                         ('FONTSIZE', (0, 0), (-1, -1), 9.5),
-                        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-                        ('TOPPADDING', (0, 0), (-1, -1), 8),
-                        ('GRID', (0, 0), (-1, -1), 0.5, _hex("border")),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                        ('TOPPADDING', (0, 0), (-1, -1), 10),
+                        ('LINEBELOW', (0, 0), (-1, 0), 1.5, _hex("accent")),
+                        ('LINEBELOW', (0, 1), (-1, -1), 0.5, _hex("border")),
                         ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
+                        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
                     ]))
                     Story.append(st)
                     Story.append(Spacer(1, 8))

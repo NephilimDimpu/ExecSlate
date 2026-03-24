@@ -798,6 +798,122 @@
 
 
 
+    <!-- ================= COPILOT CHAT WIDGET ================= -->
+    <div class="copilot-widget" id="copilotWidget">
+        <button class="copilot-toggle" id="copilotToggle" aria-label="Toggle Copilot">
+            <span class="copilot-icon">✨</span>
+            <span class="copilot-text">Ask Copilot</span>
+        </button>
+
+        <div class="copilot-window" id="copilotWindow">
+            <div class="copilot-header">
+                <div class="copilot-header-title">
+                    <span class="copilot-icon-small">✨</span>
+                    <span>ExecSlate Copilot</span>
+                </div>
+                <button class="copilot-close" id="copilotClose">×</button>
+            </div>
+            
+            <div class="copilot-messages" id="copilotMessages">
+                <div class="copilot-message agent">
+                    <div class="message-content">
+                        Hello {{ user.username or "there" }}. I'm analyzing the <strong>{{ report.client }}</strong> data. What would you like to know?
+                    </div>
+                </div>
+            </div>
+
+            <form class="copilot-form" id="copilotForm">
+                <input type="text" class="copilot-input" id="copilotInput" placeholder="Ask about revenue, growth..." required autocomplete="off">
+                <button type="submit" class="copilot-send" id="copilotSend" aria-label="Send message">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Copilot Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('copilotToggle');
+            const closeBtn = document.getElementById('copilotClose');
+            const chatWindow = document.getElementById('copilotWindow');
+            const form = document.getElementById('copilotForm');
+            const input = document.getElementById('copilotInput');
+            const messages = document.getElementById('copilotMessages');
+            const sendBtn = document.getElementById('copilotSend');
+            
+            const projectId = "{{ report.id }}";
+            
+            function toggleChat() {
+                chatWindow.classList.toggle('active');
+                if(chatWindow.classList.contains('active')) {
+                    input.focus();
+                }
+            }
+
+            toggle.addEventListener('click', toggleChat);
+            closeBtn.addEventListener('click', toggleChat);
+
+            function addMessage(text, isUser = false) {
+                const div = document.createElement('div');
+                div.className = `copilot-message ${isUser ? 'user' : 'agent'}`;
+                
+                // Extremely basic markdown parsing for strong and newlines
+                let formattedText = text.replace(/(?:\r\n|\r|\n)/g, '<br>');
+                formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                div.innerHTML = `<div class="message-content">${formattedText}</div>`;
+                messages.appendChild(div);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const text = input.value.trim();
+                if (!text) return;
+
+                addMessage(text, true);
+                input.value = '';
+                input.disabled = true;
+                sendBtn.disabled = true;
+
+                // Add loading indicator
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'copilot-message agent loading';
+                loadingDiv.innerHTML = `<div class="message-content"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>`;
+                messages.appendChild(loadingDiv);
+                messages.scrollTop = messages.scrollHeight;
+
+                try {
+                    const response = await fetch(`/api/projects/${projectId}/chat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ question: text })
+                    });
+                    
+                    messages.removeChild(loadingDiv);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        addMessage(data.answer);
+                    } else {
+                        const error = await response.json();
+                        addMessage("Sorry, I encountered an error: " + (error.detail || "Unknown error"));
+                    }
+                } catch (err) {
+                    messages.removeChild(loadingDiv);
+                    addMessage("Connection error. Please try again.");
+                } finally {
+                    input.disabled = false;
+                    sendBtn.disabled = false;
+                    input.focus();
+                }
+            });
+        });
+    </script>
+
     <!-- ================= LOADING OVERLAY ================= -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-content">
