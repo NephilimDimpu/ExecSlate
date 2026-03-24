@@ -154,7 +154,7 @@ def verify_password(password: str, hashed: str) -> bool:
 # ==================== FASTAPI APP SETUP ====================
 app = FastAPI(title="ExecSlate", version="1.0.0")
 
-import payments
+import routes.payments as payments
 app.include_router(payments.router)
 
 # Add session middleware
