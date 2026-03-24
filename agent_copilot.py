@@ -6,7 +6,6 @@ from typing import Dict, Any
 
 from langchain_openai import ChatOpenAI
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-from langchain.agents.agent_types import AgentType
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ def get_agent_for_dataframe(df: pd.DataFrame):
             llm,
             df,
             verbose=True,
-            agent_type=AgentType.OPENAI_FUNCTIONS,
+            agent_type="openai-tools",
             allow_dangerous_code=True # Required by recent langchain-experimental updates
         )
         return agent
