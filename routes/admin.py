@@ -66,7 +66,7 @@ def setup(app_module):
         pro_users = sum(1 for u in user_data if u["plan"] == "pro")
         business_users = sum(1 for u in user_data if u["plan"] == "business")
 
-        return templates.TemplateResponse("admin.html", {
+        return templates.TemplateResponse(request=request, name="admin.html", context= {
             "request": request,
             "user_data": user_data,
             "all_projects": projects,

@@ -208,8 +208,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
                 response.headers[key] = value
         return response
     
-    return templates.TemplateResponse(
-        "error.html",
+    return templates.TemplateResponse(request=request, name="error.html", context=
         {
             "request": request,
             "status_code": exc.status_code,
@@ -221,8 +220,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):
     """Custom 404 handler"""
-    return templates.TemplateResponse(
-        "error.html",
+    return templates.TemplateResponse(request=request, name="error.html", context=
         {"request": request, "status_code": 404, "detail": None},
         status_code=404
     )
@@ -237,8 +235,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     # FOR DEBUGGING: Show the actual error message even for 500s
     detail = getattr(exc, 'detail', str(exc))
     
-    return templates.TemplateResponse(
-        "error.html",
+    return templates.TemplateResponse(request=request, name="error.html", context=
         {
             "request": request,
             "status_code": status_code,
@@ -1292,7 +1289,7 @@ async def index(request: Request):
     user_session = request.session.get("user")
     
     if not user_session:
-        return templates.TemplateResponse("landing.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="landing.html", context= {"request": request})
     
     # User is logged in - prepare dashboard data
     email = user_session["email"]
@@ -1318,7 +1315,7 @@ async def index(request: Request):
             "PLAN_LIMITS": PLAN_LIMITS,
             "is_demo": False
         }
-        return templates.TemplateResponse("dashboard.html", context)
+        return templates.TemplateResponse(request=request, name="dashboard.html", context= context)
         
     else:
         # Legacy/Demo user (in-memory)
@@ -1344,7 +1341,7 @@ async def index(request: Request):
             "PLAN_LIMITS": PLAN_LIMITS,
             "is_demo": True
         }
-        return templates.TemplateResponse("dashboard.html", context)
+        return templates.TemplateResponse(request=request, name="dashboard.html", context= context)
 
 # ==================== AUTH ROUTES → routes/auth.py ====================
 # Login, register, logout, demo login, and pricing routes
@@ -1384,7 +1381,7 @@ def report(pid: int, request: Request, user=Depends(require_user)):
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    return templates.TemplateResponse("report.html", {
+    return templates.TemplateResponse(request=request, name="report.html", context= {
         "request": request,
         "report": project,
         "user": user,

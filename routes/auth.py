@@ -30,7 +30,7 @@ def setup(app_module):
     @router.get("/login")
     def login_page(request: Request):
         """Display login page"""
-        return templates.TemplateResponse("login.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="login.html", context= {"request": request})
 
     @router.post("/login")
     @limiter.limit("5/minute")
@@ -63,7 +63,7 @@ def setup(app_module):
             log(f"User logged in (DEMO): {email}")
             return RedirectResponse("/", status_code=303)
 
-        return templates.TemplateResponse("login.html", {
+        return templates.TemplateResponse(request=request, name="login.html", context= {
             "request": request,
             "error": "Invalid email or password"
         })
@@ -77,7 +77,7 @@ def setup(app_module):
         valid_plans = ['free', 'pro', 'business']
         if plan and plan not in valid_plans:
             plan = None
-        return templates.TemplateResponse("register.html", {
+        return templates.TemplateResponse(request=request, name="register.html", context= {
             "request": request,
             "plan": plan
         })
@@ -98,7 +98,7 @@ def setup(app_module):
         # 1. Validate Email Format
         email_regex = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
         if not email_regex.match(email):
-            return templates.TemplateResponse("register.html", {
+            return templates.TemplateResponse(request=request, name="register.html", context= {
                 "request": request,
                 "error": "Please enter a valid email address format.",
                 "plan": selected_plan if selected_plan != 'free' else None
@@ -115,7 +115,7 @@ def setup(app_module):
         
         # We also block domains containing offensive words or temporary patterns
         if domain in blocked_domains or "suck" in domain or "temp" in domain.split('.')[0]:
-            return templates.TemplateResponse("register.html", {
+            return templates.TemplateResponse(request=request, name="register.html", context= {
                 "request": request,
                 "error": "Registration is not permitted with this email provider. Please use a valid work or personal email.",
                 "plan": selected_plan if selected_plan != 'free' else None
@@ -127,14 +127,14 @@ def setup(app_module):
             selected_plan = 'free'
 
         if password != confirm_password:
-            return templates.TemplateResponse("register.html", {
+            return templates.TemplateResponse(request=request, name="register.html", context= {
                 "request": request,
                 "error": "Passwords do not match",
                 "plan": selected_plan if selected_plan != 'free' else None
             })
 
         if len(password) < 6:
-            return templates.TemplateResponse("register.html", {
+            return templates.TemplateResponse(request=request, name="register.html", context= {
                 "request": request,
                 "error": "Password must be at least 6 characters",
                 "plan": selected_plan if selected_plan != 'free' else None
@@ -142,7 +142,7 @@ def setup(app_module):
 
         existing_user = db.get_user_by_email(email)
         if existing_user:
-            return templates.TemplateResponse("register.html", {
+            return templates.TemplateResponse(request=request, name="register.html", context= {
                 "request": request,
                 "error": "Email already registered. Please login instead.",
                 "plan": selected_plan if selected_plan != 'free' else None
@@ -152,7 +152,7 @@ def setup(app_module):
         user_id = db.create_user(email, password_hash, plan='free', username=username)
 
         if not user_id:
-            return templates.TemplateResponse("register.html", {
+            return templates.TemplateResponse(request=request, name="register.html", context= {
                 "request": request,
                 "error": "Registration failed. Please try again."
             })
@@ -183,7 +183,7 @@ def setup(app_module):
 
     @router.get("/forgot-password")
     def forgot_password_page(request: Request):
-        return templates.TemplateResponse("forgot_password.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="forgot_password.html", context= {"request": request})
 
     @router.post("/forgot-password")
     @limiter.limit("3/minute")
@@ -204,13 +204,13 @@ def setup(app_module):
             except Exception as e:
                 log(f"Failed to send reset email: {e}")
             
-            return templates.TemplateResponse("reset_sent.html", {
+            return templates.TemplateResponse(request=request, name="reset_sent.html", context= {
                 "request": request, 
                 "email": email
             })
             
         # Also show success if user not found to prevent email enumeration
-        return templates.TemplateResponse("reset_sent.html", {
+        return templates.TemplateResponse(request=request, name="reset_sent.html", context= {
             "request": request,
             "email": email
         })
@@ -219,7 +219,7 @@ def setup(app_module):
     def reset_password_page(request: Request, token: str):
         if not token:
             return RedirectResponse("/login")
-        return templates.TemplateResponse("reset_password.html", {
+        return templates.TemplateResponse(request=request, name="reset_password.html", context= {
             "request": request,
             "token": token
         })
@@ -233,14 +233,14 @@ def setup(app_module):
         confirm_password: str = Form(...)
     ):
         if password != confirm_password:
-            return templates.TemplateResponse("reset_password.html", {
+            return templates.TemplateResponse(request=request, name="reset_password.html", context= {
                 "request": request,
                 "token": token,
                 "error": "Passwords do not match"
             })
             
         if len(password) < 6:
-            return templates.TemplateResponse("reset_password.html", {
+            return templates.TemplateResponse(request=request, name="reset_password.html", context= {
                 "request": request,
                 "token": token,
                 "error": "Password must be at least 6 characters"
@@ -248,7 +248,7 @@ def setup(app_module):
             
         user = db.get_user_by_reset_token(token)
         if not user:
-            return templates.TemplateResponse("reset_password.html", {
+            return templates.TemplateResponse(request=request, name="reset_password.html", context= {
                 "request": request,
                 "token": token,
                 "error": "Invalid or expired reset token. Please request a new one."
@@ -299,7 +299,7 @@ def setup(app_module):
     def pricing_page(request: Request):
         """Display pricing page"""
         user = request.session.get("user")
-        return templates.TemplateResponse("pricing.html", {
+        return templates.TemplateResponse(request=request, name="pricing.html", context= {
             "request": request,
             "PLAN_LIMITS": PLAN_LIMITS,
             "user": user
