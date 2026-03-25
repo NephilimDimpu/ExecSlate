@@ -199,6 +199,11 @@ def cleanup_old_exports(max_age_days: int = 7):
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """Handle HTTP errors with custom error page"""
+    # Return JSON for API routes
+    if request.url.path.startswith("/api/"):
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+        
     # Pass through redirects (3xx) - used by auth guards
     if 300 <= exc.status_code < 400:
         from starlette.responses import Response
@@ -235,6 +240,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     # FOR DEBUGGING: Show the actual error message even for 500s
     detail = getattr(exc, 'detail', str(exc))
     
+    # Return JSON for API routes
+    if request.url.path.startswith("/api/"):
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"detail": detail}, status_code=status_code)
+        
     return templates.TemplateResponse(request=request, name="error.html", context=
         {
             "request": request,

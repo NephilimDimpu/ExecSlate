@@ -893,18 +893,29 @@
                         body: JSON.stringify({ question: text })
                     });
                     
-                    messages.removeChild(loadingDiv);
+                    if (messages.contains(loadingDiv)) {
+                        messages.removeChild(loadingDiv);
+                    }
 
                     if (response.ok) {
                         const data = await response.json();
-                        addMessage(data.answer);
+                        addMessage(data.answer || "No response received.");
                     } else {
-                        const error = await response.json();
-                        addMessage("Sorry, I encountered an error: " + (error.detail || "Unknown error"));
+                        // Handle cases where response might not be JSON
+                        const contentType = response.headers.get("content-type");
+                        if (contentType && contentType.indexOf("application/json") !== -1) {
+                            const error = await response.json();
+                            addMessage("Sorry, I encountered an error: " + (error.detail || "Unknown error"));
+                        } else {
+                            addMessage("Sorry, the server encountered an unexpected error.");
+                        }
                     }
                 } catch (err) {
-                    messages.removeChild(loadingDiv);
-                    addMessage("Connection error. Please try again.");
+                    if (messages.contains(loadingDiv)) {
+                        messages.removeChild(loadingDiv);
+                    }
+                    addMessage("Connection error while talking to Copilot. Please try again.");
+                    console.error("Copilot Error:", err);
                 } finally {
                     input.disabled = false;
                     sendBtn.disabled = false;

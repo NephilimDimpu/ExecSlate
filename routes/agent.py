@@ -37,7 +37,10 @@ def setup(app_module):
                 raise HTTPException(status_code=404, detail="Data file not found on server")
                 
         try:
-            df = pd.read_csv(file_path)
+            if str(file_path).endswith(('.xlsx', '.xls')):
+                df = pd.read_excel(file_path)
+            else:
+                df = pd.read_csv(file_path)
             
             # Fetch company memory (past insights for this client)
             all_projects = db.get_user_projects(user["id"])
