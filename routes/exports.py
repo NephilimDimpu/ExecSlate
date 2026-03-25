@@ -142,34 +142,3 @@ def setup(app_module):
             logger.error(f"DOCX export failed: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail="Failed to generate Word document")
 
-    @router.get("/upgrade/{pid}")
-    def upgrade_to_pro(pid: int, request: Request, user=Depends(require_user)):
-        """
-        Simulate upgrading to Pro - TEST MODE ONLY
-        In production, integrate with Stripe/payment processor
-        """
-        user_email = user["email"]
-        is_db_user = "id" in user
-        from app import users as app_users
-
-        if is_db_user:
-            db.update_user_stats(user["id"], plan="pro")
-        else:
-            if user_email in app_users:
-                app_users[user_email]["plan"] = "pro"
-
-        user["plan"] = "pro"
-        request.session["user"] = user
-
-        log(f"User {user_email} upgraded to Pro (test mode)")
-
-        if is_db_user:
-            project = db.get_project(pid, user["id"])
-            if project:
-                db.update_project(pid, user["id"], error=None)
-        else:
-            project = next((x for x in projects if x["id"] == pid and x.get("user_email") == user_email), None)
-            if project:
-                project["error"] = None
-
-        return RedirectResponse(f"/report/{pid}", status_code=303)
