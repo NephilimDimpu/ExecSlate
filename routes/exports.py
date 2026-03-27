@@ -36,7 +36,7 @@ def setup(app_module):
         if "id" in user:
             project = db.get_project(pid, user["id"])
         else:
-            project = next((x for x in projects if x["id"] == pid and x.get("user_email") == user_email), None)
+            project = next((x for x in projects if x.get("id") == pid and x.get("user_email") == user_email), None)
 
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
@@ -65,7 +65,7 @@ def setup(app_module):
         if "id" in user:
             project = db.get_project(pid, user["id"])
         else:
-            project = next((x for x in projects if x["id"] == pid and x.get("user_email") == user_email), None)
+            project = next((x for x in projects if x.get("id") == pid and x.get("user_email") == user_email), None)
 
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
@@ -109,7 +109,7 @@ def setup(app_module):
         if "id" in user:
             project = db.get_project(pid, user["id"])
         else:
-            project = next((x for x in projects if x["id"] == pid and x.get("user_email") == user_email), None)
+            project = next((x for x in projects if x.get("id") == pid and x.get("user_email") == user_email), None)
 
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")

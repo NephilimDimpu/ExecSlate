@@ -1380,7 +1380,7 @@ def report(pid: int, request: Request, user=Depends(require_user)):
         }
     else:
         # Demo User
-        project = next((x for x in projects if x["id"] == pid and x.get("user_email") == user_email), None)
+        project = next((x for x in projects if x.get("id") == pid and x.get("user_email") == user_email), None)
         user_data = users.get(user_email, {})
         stats = {
             "uploads_used": user_data.get("uploads_used", 0),
@@ -1466,7 +1466,7 @@ async def upload(
     if is_db_user:
         project = db.get_project(pid, user["id"])
     else:
-        project = next((x for x in projects if x["id"] == pid and x.get("user_email") == user_email), None)
+        project = next((x for x in projects if x.get("id") == pid and x.get("user_email") == user_email), None)
     
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -1732,7 +1732,7 @@ async def load_demo(pid: int, request: Request, user=Depends(require_user)):
     if is_db_user:
         project = db.get_project(pid, user["id"])
     else:
-        project = next((x for x in projects if x["id"] == pid and x.get("user_email") == user_email), None)
+        project = next((x for x in projects if x.get("id") == pid and x.get("user_email") == user_email), None)
     
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -1873,7 +1873,7 @@ async def rename_project(
         
     else:
         # Demo User
-        project = next((x for x in projects if x["id"] == pid and x.get("user_email") == user_email), None)
+        project = next((x for x in projects if x.get("id") == pid and x.get("user_email") == user_email), None)
         if not project:
              raise HTTPException(status_code=404, detail="Project not found")
         
@@ -1908,7 +1908,7 @@ async def delete_project(pid: int, request: Request, user=Depends(require_user))
         
     else:
         # Demo User
-        project = next((x for x in projects if x["id"] == pid and x.get("user_email") == user_email), None)
+        project = next((x for x in projects if x.get("id") == pid and x.get("user_email") == user_email), None)
         
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
@@ -1940,7 +1940,7 @@ async def regenerate_ai(pid: int, request: Request, analysis_type: str = Form("s
         user_data = db.get_user_by_id(user["id"]) # Refresh user data for limits
     else:
         # Demo User
-        project = next((x for x in projects if x["id"] == pid and x.get("user_email") == user_email), None)
+        project = next((x for x in projects if x.get("id") == pid and x.get("user_email") == user_email), None)
         user_data = users.get(user_email, {})
 
     if not project:

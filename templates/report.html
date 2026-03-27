@@ -884,14 +884,21 @@
                 messages.appendChild(loadingDiv);
                 messages.scrollTop = messages.scrollHeight;
 
+                // Set a 50-second timeout for the AI call
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 50000);
+
                 try {
                     const response = await fetch(`/api/projects/${projectId}/chat`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ question: text })
+                        body: JSON.stringify({ question: text }),
+                        signal: controller.signal
                     });
+                    clearTimeout(timeoutId);
+                    
                     
                     if (messages.contains(loadingDiv)) {
                         messages.removeChild(loadingDiv);

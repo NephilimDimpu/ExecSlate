@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import pandas as pd
 from pathlib import Path
@@ -21,8 +22,14 @@ def setup(app_module):
         user = request.session.get("user")
         if not user:
             raise HTTPException(status_code=401, detail="Unauthorized")
-            
-        project = db.get_project(project_id, user["id"])
+        user_email = user["email"]
+        is_db_user = "id" in user
+        
+        if is_db_user:
+            project = db.get_project(project_id, user["id"])
+        else:
+            from app import projects
+            project = next((x for x in projects if x.get("id") == project_id and x.get("user_email") == user_email), None)
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
             
@@ -43,19 +50,32 @@ def setup(app_module):
                 df = pd.read_csv(file_path)
             
             # Fetch company memory (past insights for this client)
-            all_projects = db.get_user_projects(user["id"])
+            if is_db_user:
+                all_projects = db.get_user_projects(user["id"])
+            else:
+                from app import projects
+                all_projects = [p for p in projects if p.get("user_email") == user_email]
+                
             past_summaries = []
             for p in all_projects:
-                if p["client"] == project["client"] and p["id"] != project["id"]:
+                if p.get("client") == project.get("client") and p.get("id") != project.get("id"):
                     if p.get("ai_summary"):
                         past_summaries.append(f"Period {p.get('period', 'Unknown')}: {p['ai_summary']}")
                         
             # Limit memory to last 3 reports to avoid context bloat
             company_memory = "\n".join(past_summaries[:3])
             
-            answer = ask_copilot(df, payload.question, company_memory)
+            try:
+                answer = await asyncio.wait_for(
+                    asyncio.to_thread(ask_copilot, df, payload.question, company_memory),
+                    timeout=45.0
+                )
+            except asyncio.TimeoutError:
+                answer = "The Copilot analysis is taking too long on this dataset. Please try a simpler question or try again."
             
             return {"answer": answer}
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Chat error: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to process chat.")
+            raise HTTPException(status_code=500, detail=str(e))
