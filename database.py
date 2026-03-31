@@ -14,6 +14,8 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy.sql import func
 from sqlalchemy.exc import IntegrityError
 
+from storage_service import storage
+
 logger = logging.getLogger(__name__)
 
 # Use DATABASE_URL from env (PostgreSQL), fallback to local sqlite
@@ -75,6 +77,9 @@ class Project(Base):
     report_title = Column(String)
     last_uploaded_file = Column(String)
     report_type = Column(String, default='statistical')
+    analysis_framework = Column(String)  # e.g., 'profitability', 'market_entry'
+    hypotheses = Column(Text)           # JSON storage for strategic hypotheses
+    working_theory = Column(Text)       # Consultant's qualitative insights
     generated = Column(Boolean, default=False)
     error = Column(String)
     created_at = Column(DateTime, server_default=func.now())
@@ -122,12 +127,14 @@ def _project_to_dict(proj, include_user_email=False):
         "top_region": p_obj.top_region,
         "row_count": p_obj.row_count,
         "confidence": p_obj.confidence,
-        "revenue_chart": p_obj.revenue_chart,
-        "region_chart": p_obj.region_chart,
+        "revenue_chart": storage.load(p_obj.revenue_chart) if p_obj.revenue_chart and p_obj.revenue_chart.startswith("storage://") else p_obj.revenue_chart,
+        "region_chart": storage.load(p_obj.region_chart) if p_obj.region_chart and p_obj.region_chart.startswith("storage://") else p_obj.region_chart,
         "primary_kpi": p_obj.primary_kpi,
         "report_title": p_obj.report_title,
         "last_uploaded_file": p_obj.last_uploaded_file,
         "report_type": p_obj.report_type,
+        "analysis_framework": p_obj.analysis_framework,
+        "working_theory": p_obj.working_theory,
         "generated": 1 if p_obj.generated else 0,
         "error": p_obj.error,
         "created_at": p_obj.created_at,
@@ -138,13 +145,17 @@ def _project_to_dict(proj, include_user_email=False):
 
     json_fields = ['revenue_series', 'region_labels', 'region_values', 
                    'ai_insights', 'ai_recommendations', 'ai_qa', 
-                   'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics']
+                   'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics', 'hypotheses']
                    
     for field in json_fields:
         val = getattr(p_obj, field)
         if val:
             try:
-                p_dict[field] = json.loads(val)
+                if val.startswith("storage://"):
+                    raw_data = storage.load(val)
+                    p_dict[field] = json.loads(raw_data) if raw_data else None
+                else:
+                    p_dict[field] = json.loads(val)
             except:
                 p_dict[field] = None
         else:
@@ -235,12 +246,20 @@ def update_project(project_id, user_id, **kwargs):
     with SessionLocal() as db:
         json_fields = ['revenue_series', 'region_labels', 'region_values', 
                        'ai_insights', 'ai_recommendations', 'ai_qa', 
-                       'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics']
+                       'chart_narratives', 'available_columns', 'column_map', 'kpi_metrics', 'hypotheses']
+        blob_fields = ['revenue_chart', 'region_chart']
         
         upd = {}
         for k, v in kwargs.items():
             if k in json_fields and v is not None:
-                upd[k] = json.dumps(v)
+                json_str = json.dumps(v)
+                key = f"project_{project_id}_{k}"
+                uri = storage.save(key, json_str)
+                upd[k] = uri if uri else json_str
+            elif k in blob_fields and v is not None:
+                key = f"project_{project_id}_{k}"
+                uri = storage.save(key, str(v))
+                upd[k] = uri if uri else v
             else:
                 upd[k] = v
                 

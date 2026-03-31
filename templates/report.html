@@ -109,68 +109,8 @@
     {% endif %}
 
 
-    <!-- ================= HERO METRICS (ELITE) ================= -->
-    {% if report.total_revenue %}
-    <section class="metrics-hero-grid">
-
-        <div class="metric-hero-card">
-            <div class="metric-hero-label">
-                {% if report.get('kpi_metrics') and report.get('primary_kpi') and report.primary_kpi in
-                report.kpi_metrics %}
-                Total {{ report.kpi_metrics[report.primary_kpi].get('label', 'Revenue') }}
-                {% else %}Total Revenue{% endif %}
-            </div>
-            <div class="metric-hero-value">
-                {{ report.currency }}{{ "{:,.0f}".format(report.total_revenue) }}
-            </div>
-            {% if report.growth_rate is defined %}
-            <span
-                class="metric-hero-trend {{ 'positive' if report.growth_rate > 0 else 'negative' if report.growth_rate < 0 else 'neutral' }}">
-                {% if report.growth_rate > 0 %}↑{% elif report.growth_rate < 0 %}↓{% else %}→{% endif %} {{
-                    report.growth_rate|abs|round(1) }}% </span>
-                    {% endif %}
-        </div>
-
-        <div class="metric-hero-card">
-            <div class="metric-hero-label">
-                {% if report.get('kpi_metrics') and report.get('primary_kpi') and report.primary_kpi in
-                report.kpi_metrics %}
-                Average {{ report.kpi_metrics[report.primary_kpi].get('label', 'Revenue') }}
-                {% else %}Average Revenue{% endif %}
-            </div>
-            <div class="metric-hero-value">
-                {{ report.currency }}{{ "{:,.0f}".format(report.avg_revenue) }}
-            </div>
-            <span class="metric-hero-trend neutral">per period</span>
-        </div>
-
-        <div class="metric-hero-card">
-            <div class="metric-hero-label">Trend Direction</div>
-            <div class="metric-hero-value trend-{{ report.trend | lower }}">
-                {% if report.trend == "Increasing" %}↑{% elif report.trend == "Decreasing" %}↓{% else %}→{% endif %}
-                {{ report.trend }}
-            </div>
-            <span
-                class="metric-hero-trend {{ 'positive' if report.trend == 'Increasing' else 'negative' if report.trend == 'Decreasing' else 'neutral' }}">
-                {% if report.trend == "Increasing" %}Growing{% elif report.trend == "Decreasing" %}Declining{% else
-                %}Stable{% endif %}
-            </span>
-        </div>
-
-        {% if report.top_region %}
-        <div class="metric-hero-card">
-            <div class="metric-hero-label">Top Region</div>
-            <div class="metric-hero-value">{{ report.top_region }}</div>
-            <span class="metric-hero-trend neutral">Primary Market</span>
-        </div>
-        {% endif %}
-
-    </section>
-    {% endif %}
-
-
-    <!-- ================= MULTI-KPI DASHBOARD (PHASE B) ================= -->
-    {% if report.get('kpi_metrics') and report.kpi_metrics|length > 1 %}
+    <!-- ================= MULTI-KPI DASHBOARD (PHASE B / ELITE) ================= -->
+    {% if report.get('kpi_metrics') %}
     <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto; padding: 2rem;">
         <h3
             style="margin: 0 0 1.5rem 0; color: var(--text); font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
@@ -178,8 +118,7 @@
         </h3>
         <div class="kpi-dashboard-grid"
             style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
-            {% for col_name, kpi in report.kpi_metrics.items() %}
-            {% if col_name != report.get('primary_kpi', '') %}
+            {% for kpi in report.kpi_metrics.values() | sort(attribute='priority') %}
             <div
                 style="background: var(--bg-secondary, #1e293b); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border, #334155); transition: transform 0.2s;">
                 <div
@@ -218,9 +157,54 @@
                     </span>
                 </div>
             </div>
-            {% endif %}
             {% endfor %}
         </div>
+    </section>
+    {% elif report.total_revenue %}
+    <section class="metrics-hero-grid">
+
+        <div class="metric-hero-card">
+            <div class="metric-hero-label">Total Revenue</div>
+            <div class="metric-hero-value">
+                {{ report.currency }}{{ "{:,.0f}".format(report.total_revenue) }}
+            </div>
+            {% if report.growth_rate is defined %}
+            <span
+                class="metric-hero-trend {{ 'positive' if report.growth_rate > 0 else 'negative' if report.growth_rate < 0 else 'neutral' }}">
+                {% if report.growth_rate > 0 %}↑{% elif report.growth_rate < 0 %}↓{% else %}→{% endif %} {{
+                    report.growth_rate|abs|round(1) }}% </span>
+                    {% endif %}
+        </div>
+
+        <div class="metric-hero-card">
+            <div class="metric-hero-label">Average Revenue</div>
+            <div class="metric-hero-value">
+                {{ report.currency }}{{ "{:,.0f}".format(report.avg_revenue) }}
+            </div>
+            <span class="metric-hero-trend neutral">per period</span>
+        </div>
+
+        <div class="metric-hero-card">
+            <div class="metric-hero-label">Trend Direction</div>
+            <div class="metric-hero-value trend-{{ report.trend | lower }}">
+                {% if report.trend == "Increasing" %}↑{% elif report.trend == "Decreasing" %}↓{% else %}→{% endif %}
+                {{ report.trend }}
+            </div>
+            <span
+                class="metric-hero-trend {{ 'positive' if report.trend == 'Increasing' else 'negative' if report.trend == 'Decreasing' else 'neutral' }}">
+                {% if report.trend == "Increasing" %}Growing{% elif report.trend == "Decreasing" %}Declining{% else
+                %}Stable{% endif %}
+            </span>
+        </div>
+
+        {% if report.top_region %}
+        <div class="metric-hero-card">
+            <div class="metric-hero-label">Top Region</div>
+            <div class="metric-hero-value">{{ report.top_region }}</div>
+            <span class="metric-hero-trend neutral">Primary Market</span>
+        </div>
+        {% endif %}
+
     </section>
     {% endif %}
 
@@ -282,6 +266,18 @@
             <p style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: -0.5rem;">
                 Accepts CSV and Excel files (.csv, .xlsx, .xls)
             </p>
+
+            <div style="margin-top: 1rem; margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Consulting Framework</label>
+                <select name="analysis_framework" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary);">
+                    <option value="general" {% if report.analysis_framework == 'general' %}selected{% endif %}>General Business Analysis</option>
+                    <option value="profitability" {% if report.analysis_framework == 'profitability' %}selected{% endif %}>Profitability Improvement (Margin Waterfall Focus)</option>
+                    <option value="market_entry" {% if report.analysis_framework == 'market_entry' %}selected{% endif %}>Market Entry Strategy (TAM/SAM/SOM Focus)</option>
+                    <option value="cost_reduction" {% if report.analysis_framework == 'cost_reduction' %}selected{% endif %}>Cost Reduction & Operational Efficiency</option>
+                    <option value="growth_strategy" {% if report.analysis_framework == 'growth_strategy' %}selected{% endif %}>Growth & Expansion Strategy</option>
+                    <option value="due_diligence" {% if report.analysis_framework == 'due_diligence' %}selected{% endif %}>Commercial Due Diligence</option>
+                </select>
+            </div>
 
             <!-- Analysis Type Selector -->
             <label style="margin-top: 0.5rem;">Analysis Type</label>
@@ -357,15 +353,64 @@
     </section>
 
 
+    <!-- ================= CONSULTANT'S WORKING THEORY (NEW) ================= -->
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto; border-left: 4px solid var(--indigo);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="margin: 0;">Consultant's Working Theory</h3>
+            <span style="font-size: 0.8rem; color: var(--text-tertiary); background: var(--bg-secondary); padding: 0.2rem 0.6rem; border-radius: 1rem;">
+                Qualitative Context
+            </span>
+        </div>
+        
+        <form action="/project/save_theory/{{ report.id }}" method="post">
+            <textarea name="working_theory" rows="4" style="width: 100%; background: transparent; border: 1px solid var(--border-primary); border-radius: 0.5rem; color: var(--text-primary); padding: 1rem; font-family: inherit; font-size: 0.95rem; line-height: 1.6; resize: vertical;" placeholder="Capture qualitative insights, hypotheses, or contextual notes that aren't in the data...">{{ report.working_theory or '' }}</textarea>
+            <div style="display: flex; justify-content: flex-end; margin-top: 0.75rem;">
+                <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Save Theory</button>
+            </div>
+        </form>
+    </section>
+
+
+    <!-- ================= STRATEGIC HYPOTHESES (NEW) ================= -->
+    {% if report.hypotheses %}
+    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
+        <h3>Strategic Hypotheses</h3>
+        <p style="color: var(--text-tertiary); margin-top: -0.5rem; margin-bottom: 1.5rem; font-size: 0.9rem;">
+            Hypothesis-driven analysis generated based on data patterns and selected framework.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+            {% for h in report.hypotheses %}
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 0.75rem; padding: 1.25rem; border-top: 3px solid {% if h.confidence == 'high' %}var(--emerald){% elif h.confidence == 'medium' %}var(--indigo){% else %}var(--text-tertiary){% endif %};">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                    <span style="font-weight: 700; color: var(--text-primary); font-size: 0.8rem; background: var(--bg-primary); padding: 0.2rem 0.5rem; border-radius: 0.25rem;">{{ h.id }}</span>
+                    <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: {% if h.confidence == 'high' %}var(--emerald){% elif h.confidence == 'medium' %}var(--indigo){% else %}var(--text-tertiary){% endif %};">
+                        {{ h.confidence | upper }} CONFIDENCE
+                    </span>
+                </div>
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; line-height: 1.4;">{{ h.statement }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 0.75rem;">
+                    <strong>Validation Needed:</strong> {{ h.data_needed | join(', ') }}
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); background: var(--bg-primary); padding: 0.5rem; border-radius: 0.4rem; border-left: 2px solid var(--border-primary);">
+                    <em>{{ h.validation_plan }}</em>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+
     <!-- ================= EXECUTIVE SUMMARY (ELITE) ================= -->
     {% if report.ai_summary %}
     <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto;">
         <h3>Executive Summary</h3>
 
         <div class="executive-quote">
-            <p class="executive-quote-text">{{ report.ai_summary }}</p>
-            <div class="executive-quote-badge">
-                {% if report.report_type == "ai" %}
+            <div class="executive-quote-text">{{ report.ai_summary | safe }}</div>
+            <div class="executive-quote-badge" style="margin-top: 1rem;">
+                {% if report.report_type == "ai_enhanced" or report.report_type == "ai" %}
                 ✨ AI-Enhanced Analysis
                 {% else %}
                 📊 Statistical Analysis

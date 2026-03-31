@@ -254,10 +254,37 @@ def export_pdf_enhanced(project, output_path, user_plan="free"):
     Story.append(PageBreak())
 
     # ═══ 1. EXECUTIVE SUMMARY ═══
+    # --- Consultant's Working Theory (NEW) ---
+    working_theory = project.get("working_theory")
+    if working_theory:
+        Story.append(Paragraph("Consultant's Working Theory", ParagraphStyle(
+            'TheoryTitle', parent=styles['Heading3'], fontSize=12, textColor=_hex("accent"),
+            spaceBefore=14, spaceAfter=8, fontName='Helvetica-Bold'
+        )))
+        Story.append(Paragraph(working_theory, ParagraphStyle(
+            'TheoryBody', parent=normal, leftIndent=10, borderPadding=8,
+            backColor=_hex("lighter"), borderColor=_hex("border"), borderWidth=0.5
+        )))
+        Story.append(Spacer(1, 12))
+
     Story.append(_section_header("Executive Summary", styles))
     summary = project.get("ai_summary", "No summary available.")
     Story.append(Paragraph(summary, normal))
     Story.append(Spacer(1, 16))
+
+    # --- Strategic Hypotheses (NEW) ---
+    hypotheses = project.get("hypotheses", [])
+    if hypotheses:
+        Story.append(Paragraph("Strategic Hypotheses", ParagraphStyle(
+            'HypoTitle', parent=styles['Heading3'], fontSize=12, textColor=_hex("navy"),
+            spaceBefore=10, spaceAfter=8, fontName='Helvetica-Bold'
+        )))
+        for h in hypotheses:
+            h_text = f"<b>{h.get('id', 'H')}:</b> {h.get('statement', '')}"
+            Story.append(Paragraph(h_text, normal))
+            Story.append(Paragraph(f"<i>Validation: {h.get('validation_plan', '')}</i>", 
+                                   ParagraphStyle('HypoVal', parent=normal, fontSize=9, leftIndent=15, textColor=_hex("gray"))))
+        Story.append(Spacer(1, 16))
 
     # ═══ 2. KEY PERFORMANCE METRICS ═══
     Story.append(_section_header("Key Performance Metrics", styles))
@@ -582,7 +609,31 @@ def export_ppt_enhanced(project, output_path, user_plan="free"):
         _ppt_add_textbox(slide, 8.3, y_start + i * 1.35 + 0.45, 4, 0.4,
                           value, font_size=20, bold=True, color="ffffff")
 
-    _ppt_add_footer(slide, slide_num)
+    # ═══ SLIDE 2.5: WORKING THEORY & HYPOTHESES (NEW) ═══
+    working_theory = project.get("working_theory")
+    hypotheses = project.get("hypotheses", [])
+    
+    if working_theory or hypotheses:
+        slide_num += 1
+        slide = prs.slides.add_slide(prs.slide_layouts[6])
+        _ppt_set_bg(slide, BRAND["dark"])
+        _ppt_add_textbox(slide, 0.8, 0.4, 10, 0.6, "Strategic Context & Hypotheses",
+                          font_size=24, bold=True, color="ffffff")
+        
+        y_offset = 1.3
+        if working_theory:
+            _ppt_add_textbox(slide, 0.8, y_offset, 11, 0.4, "Consultant's Working Theory", font_size=16, bold=True, color=BRAND["accent"])
+            _ppt_add_textbox(slide, 0.8, y_offset + 0.5, 11, 1.5, working_theory, font_size=12, color="cbd5e1")
+            y_offset += 2.2
+            
+        if hypotheses:
+            _ppt_add_textbox(slide, 0.8, y_offset, 11, 0.4, "Testing Hypotheses", font_size=16, bold=True, color="ffffff")
+            h_text = ""
+            for h in hypotheses[:3]: # Show top 3
+                h_text += f"• {h.get('id')}: {h.get('statement')}\n"
+            _ppt_add_textbox(slide, 0.8, y_offset + 0.5, 11, 2.0, h_text.strip(), font_size=12, color="94a3b8")
+            
+        _ppt_add_footer(slide, slide_num)
 
     # ═══ SLIDE 3: CHARTS ═══
     for chart_key, chart_label in [('revenue_chart', 'Revenue Trend Analysis'),
@@ -803,8 +854,24 @@ def export_docx_enhanced(project, output_path, user_plan="free"):
     doc.add_page_break()
 
     # ═══ EXECUTIVE SUMMARY ═══
+    # --- Working Theory (NEW) ---
+    working_theory = project.get("working_theory")
+    if working_theory:
+        doc.add_heading("Consultant's Working Theory", 2)
+        p = doc.add_paragraph(sanitize(working_theory))
+        p.style.font.italic = True
+        doc.add_paragraph()
+
     doc.add_heading('Executive Summary', 1)
     doc.add_paragraph(sanitize(project.get("ai_summary", "No summary available.")))
+    
+    # --- Hypotheses (NEW) ---
+    hypotheses = project.get("hypotheses", [])
+    if hypotheses:
+        doc.add_heading('Strategic Hypotheses', 2)
+        for h in hypotheses:
+            doc.add_paragraph(f"{h.get('id')}: {sanitize(h.get('statement'))}", style='List Bullet')
+    
     doc.add_page_break()
 
     # ═══ KEY METRICS ═══

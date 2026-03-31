@@ -65,9 +65,15 @@ def setup(app_module):
             # Limit memory to last 3 reports to avoid context bloat
             company_memory = "\n".join(past_summaries[:3])
             
+            # ✅ NEW: Strategic Context for Copilot (Phase 1.3)
+            strategic_context = {
+                "framework": project.get("analysis_framework", "general"),
+                "working_theory": project.get("working_theory", "")
+            }
+            
             try:
                 answer = await asyncio.wait_for(
-                    asyncio.to_thread(ask_copilot, df, payload.question, company_memory),
+                    asyncio.to_thread(ask_copilot, df, payload.question, company_memory, strategic_context),
                     timeout=45.0
                 )
             except asyncio.TimeoutError:

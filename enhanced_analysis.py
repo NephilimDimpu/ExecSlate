@@ -21,40 +21,75 @@ KNOWN_KPIS = {
         'label': 'Revenue',
         'priority': 1,
     },
+    'ebitda': {
+        'patterns': ['ebitda', 'earnings_before_interest'],
+        'format': 'currency',
+        'direction': 'up_good',
+        'label': 'EBITDA',
+        'priority': 2,
+    },
     'profit': {
-        'patterns': ['profit', 'earnings', 'ebitda', 'ebit', 'net_income', 'operating_income', 'gross_profit', 'net_profit'],
+        'patterns': ['profit', 'earnings', 'ebit', 'net_income', 'operating_income', 'gross_profit', 'net_profit'],
         'format': 'currency',
         'direction': 'up_good',
         'label': 'Profit',
-        'priority': 2,
+        'priority': 3,
     },
     'margin': {
         'patterns': ['margin', 'gpm', 'npm', 'gross_margin', 'net_margin', 'profit_margin', 'operating_margin'],
         'format': 'percent',
         'direction': 'up_good',
         'label': 'Margin',
-        'priority': 3,
+        'priority': 4,
+    },
+    'roic': {
+        'patterns': ['roic', 'return_on_invested_capital', 'return_on_capital'],
+        'format': 'percent',
+        'direction': 'up_good',
+        'label': 'ROIC',
+        'priority': 5,
     },
     'cost': {
         'patterns': ['cost', 'expense', 'cogs', 'opex', 'spend', 'expenditure', 'overhead', 'total_cost', 'operating_expense'],
         'format': 'currency',
         'direction': 'down_good',
         'label': 'Cost',
-        'priority': 4,
+        'priority': 6,
+    },
+    'working_capital': {
+        'patterns': ['working_capital', 'net_working_capital'],
+        'format': 'currency',
+        'direction': 'up_good',
+        'label': 'Working Capital',
+        'priority': 7,
     },
     'units': {
         'patterns': ['units', 'quantity', 'volume', 'count', 'orders', 'transactions', 'items_sold', 'qty', 'num_orders'],
         'format': 'number',
         'direction': 'up_good',
         'label': 'Units',
-        'priority': 5,
+        'priority': 8,
     },
-    'rate': {
-        'patterns': ['rate', 'churn', 'attrition', 'conversion', 'retention', 'utilization', 'efficiency', 'yield', 'churn_rate', 'conversion_rate', 'retention_rate'],
+    'churn': {
+        'patterns': ['churn', 'churn_rate', 'attrition', 'attrition_rate'],
         'format': 'percent',
         'direction': 'down_good',
+        'label': 'Churn Rate',
+        'priority': 9,
+    },
+    'cagr': {
+        'patterns': ['cagr', 'compound_annual_growth_rate'],
+        'format': 'percent',
+        'direction': 'up_good',
+        'label': 'CAGR',
+        'priority': 10,
+    },
+    'rate': {
+        'patterns': ['rate', 'conversion', 'retention', 'utilization', 'efficiency', 'yield', 'conversion_rate', 'retention_rate'],
+        'format': 'percent',
+        'direction': 'up_good',
         'label': 'Rate',
-        'priority': 6,
+        'priority': 11,
     },
 }
 
@@ -588,3 +623,101 @@ def create_segmentation_table_markdown(seg_data: Dict[str, Any], metric: str, di
         md += f"| {name} | {total} | {pct} | {avg} |\n"
     
     return md
+
+# ==================== CONSULTANT HYPOTHESIS ENGINE ====================
+
+def generate_hypotheses(analysis: Dict[str, Any], framework: str = "general") -> List[Dict[str, Any]]:
+    """
+    Generate strategic hypotheses based on analysis results and selected framework.
+    
+    Addresses Phase 1.1: Hypothesis Engine
+    """
+    hypotheses = []
+    
+    # Extract key stats
+    metrics = analysis.get('overall_metrics', {})
+    if not metrics:
+        return []
+    
+    primary_metric = list(metrics.keys())[0]
+    growth = 0
+    if analysis.get('period_comparison'):
+        growth = analysis['period_comparison'].get('percent_change', 0)
+    
+    # ── GENERIC HYPOTHESES (Any Framework) ──
+    
+    # H1: Growth/Decline Driver
+    if growth > 10:
+        hypotheses.append({
+            "id": "H1",
+            "statement": f"Strong {primary_metric} growth is driven by expanding market share in top performing segments.",
+            "data_needed": ["competitor_benchmarks", "market_share_trends"],
+            "confidence": "high",
+            "validation_plan": "Cross-reference growth with industry averages to confirm relative performance."
+        })
+    elif growth < -5:
+        hypotheses.append({
+            "id": "H1",
+            "statement": f"Significant {primary_metric} decline suggests structural churn or competitive displacement.",
+            "data_needed": ["churn_by_reason", "win_loss_analysis"],
+            "confidence": "medium",
+            "validation_plan": "Audit top lost accounts to identify common failure points."
+        })
+
+    # H2: Concentration Risk
+    top_performer = None
+    if analysis.get('segmentation') and primary_metric in analysis['segmentation']:
+        for dim, data in analysis['segmentation'][primary_metric].items():
+            if data and data['top_performer']['pct'] > 40:
+                top_performer = data['top_performer']['name']
+                hypotheses.append({
+                    "id": "H2",
+                    "statement": f"High revenue concentration in '{top_performer}' creates material portfolio risk.",
+                    "data_needed": ["segment_stability_index", "alternate_market_potential"],
+                    "confidence": "high",
+                    "validation_plan": "Stress-test the model by simulating a 20% drawdown in the top segment."
+                })
+                break
+
+    # ── FRAMEWORK-SPECIFIC HYPOTHESES ──
+    
+    if framework == "profitability":
+        # Check if we have cost and margin data
+        kpi_types = {info.get('type') for info in analysis.get('kpi_classification', {}).values()}
+        
+        if 'cost' in kpi_types and 'margin' in kpi_types:
+            hypotheses.append({
+                "id": "H3",
+                "statement": "Profitability leakage is likely occurring in high-volume, low-margin segments.",
+                "data_needed": ["cogs_breakdown", "variable_vs_fixed_costs"],
+                "confidence": "medium",
+                "validation_plan": "Perform a waterfall analysis to identify where margin is being eroded."
+            })
+        else:
+            hypotheses.append({
+                "id": "H3",
+                "statement": "Margin expansion is constrained by fixed-cost overhead rather than variable inputs.",
+                "data_needed": ["opex_runrate", "headcount_efficiency"],
+                "confidence": "medium",
+                "validation_plan": "Benchmark OPEX as a % of revenue against peer groups."
+            })
+
+    elif framework == "market_entry":
+        hypotheses.append({
+            "id": "H3",
+            "statement": "Current performance demonstrates successful 'beachhead' strategy with high replication potential.",
+            "data_needed": ["TAM_SAM_SOM_update", "customer_acquisition_cost"],
+            "confidence": "medium",
+            "validation_plan": "Identify 'look-alike' segments for immediate expansion pilot."
+        })
+
+    elif framework == "cost_reduction":
+        hypotheses.append({
+            "id": "H3",
+            "statement": "Operational complexity is the primary driver of the current cost structure.",
+            "data_needed": ["process_step_count", "automation_potential_audit"],
+            "confidence": "medium",
+            "validation_plan": "Map the 'Value Chain' to identify non-value-add activities for elimination."
+        })
+
+    return hypotheses

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 # Try to use OpenAI by default since it has the strongest code-interpreter capability
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
-def ask_copilot(df: pd.DataFrame, question: str, company_memory: str = "") -> str:
+def ask_copilot(df: pd.DataFrame, question: str, company_memory: str = "", strategic_context: Dict[str, Any] = None) -> str:
     """
     Routes a user's question to the Pandas Data Agent.
     Includes persistent 'company_memory' for context.
@@ -27,8 +27,18 @@ def ask_copilot(df: pd.DataFrame, question: str, company_memory: str = "") -> st
     if company_memory:
         context_prefix = f"Context from previous reports for this company:\n{company_memory}\n\n"
         
+    strategic_prefix = ""
+    if strategic_context:
+        framework = strategic_context.get("framework", "general").replace("_", " ").title()
+        theory = strategic_context.get("working_theory", "")
+        strategic_prefix = f"CURRENT STRATEGIC FRAMEWORK: {framework}\n"
+        if theory:
+            strategic_prefix += f"CONSULTANT'S WORKING THEORY: {theory}\n"
+        strategic_prefix += "\n"
+
     full_prompt = (
         f"{context_prefix}"
+        f"{strategic_prefix}"
         f"You are the ExecSlate Executive Copilot. Answer the following question based on the provided dataframe data. "
         f"Be precise, cite the actual numbers, and deliver it in a professional, consulting tone.\n\n"
         f"Question: {question}"

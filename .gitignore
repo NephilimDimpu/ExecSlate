@@ -29,6 +29,7 @@ exports/*.docx
 static/charts/*
 !static/charts/.gitkeep
 *.db
+.storage/
 
 # Environment / Secrets
 .env

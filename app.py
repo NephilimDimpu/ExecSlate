@@ -469,6 +469,11 @@ def process_dataframe(project, df):
         logger.info(f"   Dimensions: {comprehensive_analysis.get('column_detection', {}).get('dimensions', [])}")
         logger.info(f"   Metrics: {comprehensive_analysis.get('column_detection', {}).get('metrics', [])}")
         
+        # ✅ NEW: Generate strategic hypotheses
+        framework = project.get("analysis_framework", "general")
+        project["hypotheses"] = ea.generate_hypotheses(comprehensive_analysis, framework)
+        logger.info(f"✅ Generated {len(project['hypotheses'])} hypotheses for framework: {framework}")
+        
     except Exception as e:
         logger.error(f"Enhanced analysis failed, falling back to basic: {e}")
         comprehensive_analysis = None
@@ -613,76 +618,6 @@ def calculate_confidence(project):
         score += 20
     return min(score, 100)
     
-def generate_narrative(project):
-    """
-    Deterministic executive narrative (non-AI fallback)
-    """
-    currency = project.get("currency", "$")
-    growth = project.get("growth_rate", 0)
-    top_region = project.get("top_region")
-    volatility = project.get("std_revenue", 0)
-    avg = project.get("avg_revenue", 0)
-
-    # Trend sentence
-    if growth > 10:
-        trend_sentence = "Revenue is growing strongly, indicating accelerating demand."
-    elif growth > 0:
-        trend_sentence = "Revenue is growing steadily, suggesting stable market traction."
-    elif growth < -5:
-        trend_sentence = "Revenue is declining materially, signaling potential structural challenges."
-    else:
-        trend_sentence = "Revenue performance remains largely flat, indicating a mature or plateauing phase."
-
-    # Concentration sentence
-    if top_region:
-        concentration_sentence = (
-            f"Performance is primarily driven by {top_region}, "
-            "which increases both focus and concentration risk."
-        )
-    else:
-        concentration_sentence = "Revenue is distributed across segments with no dominant concentration."
-
-    # Volatility sentence
-    if avg > 0 and volatility > avg * 0.5:
-        volatility_sentence = "Revenue volatility is elevated, which may impact cash-flow predictability."
-    else:
-        volatility_sentence = "Revenue patterns are relatively stable, supporting predictable planning."
-
-    return {
-        "summary": (
-            f"Over the analyzed period, the business generated total revenue of "
-            f"{currency}{project.get('total_revenue', 0):,.2f}. "
-            f"{trend_sentence} {concentration_sentence} {volatility_sentence}"
-        ),
-        "insights": [
-            trend_sentence,
-            concentration_sentence,
-            volatility_sentence,
-            f"Average revenue per period is approximately {currency}{avg:,.2f}."
-        ],
-        "recommendations": [
-            "Prioritize investment toward the strongest revenue-driving segments.",
-            "Reduce exposure to volatility through diversification or operational smoothing.",
-            "Monitor performance consistency before scaling fixed costs."
-        ],
-        "qa": [
-            {
-                "q": "How is the business performing overall?",
-                "a": trend_sentence
-            },
-            {
-                "q": "What should management focus on next?",
-                "a": "Improving consistency and reinforcing the strongest revenue drivers."
-            },
-            {
-                "q": "What risks should be monitored?",
-                "a": "Revenue concentration and variability pose the most immediate risks."
-            }
-        ]
-    }
-    
-# In app.py, REPLACE the existing generate_ai() and generate_narrative() functions with:
-
 def extract_segmentation_insights(project):
     """
     Extract top segmentation insights from comprehensive analysis
@@ -809,64 +744,51 @@ def generate_statistical_insights(project):
         top_region = region_seg['top_name']
         top_region_pct = region_seg['top_pct']
         region_count = len(region_labels) if region_labels else 4  # fallback
-    
-    # Trend description
-    if growth > 20:
-        trend_desc = "exhibits exceptional upward momentum, substantially exceeding typical industry growth benchmarks"
-        trend_outlook = "If sustained, this trajectory positions the organization for market leadership within its competitive set"
-    elif growth > 10:
-        trend_desc = "demonstrates strong growth aligned with aggressive market expansion patterns"
-        trend_outlook = "This growth rate is sustainable with continued investment in core revenue drivers"
-    elif growth > 5:
-        trend_desc = "shows steady organic growth indicating healthy market traction"
-        trend_outlook = "Incremental optimization of existing channels can compound these gains over subsequent quarters"
+        
+    # Trend descriptions (missing variable fix)
+    if growth > 10:
+        trend_desc = "indicates strong market momentum"
+        trend_outlook = "Current momentum provides a strategic window to scale proven growth engines"
     elif growth > 0:
-        trend_desc = "reflects modest positive momentum within a consolidated market position"
-        trend_outlook = "Growth acceleration will require strategic initiative expansion beyond current operational parameters"
-    elif growth > -5:
-        trend_desc = "remains approximately flat, suggesting market maturity or competitive equilibrium"
-        trend_outlook = "Management should evaluate whether stability reflects optimal positioning or missed growth opportunities"
-    elif growth > -15:
-        trend_desc = "shows moderate contraction necessitating immediate operational review"
-        trend_outlook = "A structured turnaround initiative focused on cost optimization and revenue recapture is recommended within 90 days"
+        trend_desc = "shows stable, positive evolution"
+        trend_outlook = "Stable fundamentals warrant continued investment in validated channels"
+    elif growth < -5:
+        trend_desc = "reflects material contraction"
+        trend_outlook = "Declining metrics demand immediate stabilization measures before further expansion"
     else:
-        trend_desc = "faces severe headwinds with material revenue erosion requiring urgent strategic intervention"
-        trend_outlook = "Executive leadership should convene a strategy review to assess viability of current business model assumptions"
+        trend_desc = "remains relatively flat"
+        trend_outlook = "Equilibrium state requires strategic intervention to break out into new growth"
     
-    # ── Build Enhanced Executive Summary ──
-    summary_parts = [
-        f"Executive Analysis: {currency}{total:,.0f} Revenue Performance",
-        "",
-        f"This comprehensive analysis examines {row_count} data points across the reporting period, revealing a {trend.lower()} trajectory with {abs(growth):.1f}% period-over-period {'growth' if growth > 0 else 'contraction'}. Revenue {trend_desc}.",
-        "",
-    ]
+    # ── SCQA Narrative Engine (Phase 1.2) ──
     
-    # ✅ ENHANCED: Geographic context with specific numbers
-    if seg_insights and 'region' in seg_insights:
-        region_seg = seg_insights['region']
-        summary_parts.append(
-            f"Geographic analysis reveals {region_count} active market{'s' if region_count > 1 else ''}, "
-            f"with {region_seg['formatted_top']} total revenue. "
-            f"{'This concentration presents both scale advantages and portfolio risk requiring active management.' if region_seg['top_pct'] > 40 else 'This distribution indicates a reasonably diversified geographic portfolio.'}"
-        )
-    elif top_region and top_region_pct > 0:
-        summary_parts.append(
-            f"Geographic analysis reveals {region_count} active market{'s' if region_count > 1 else ''}, "
-            f"with {top_region} commanding {top_region_pct:.0f}% of total revenue. "
-            f"{'This concentration presents both scale advantages and portfolio risk requiring active management.' if top_region_pct > 40 else 'This distribution indicates a reasonably diversified geographic portfolio.'}"
-        )
-    else:
-        summary_parts.append("Revenue is distributed with no single dominant geographic concentration, mitigating portfolio risk.")
-    
-    summary_parts.append("")
-    
-    # Outlook
-    summary_parts.append(
-        f"Outlook: {trend_outlook}. "
-        f"Revenue volatility of {volatility:.1f}% {'warrants conservative forecasting assumptions' if volatility > 15 else 'supports reliable forward planning'}."
+    # 1. Situation (The Context)
+    situation = (
+        f"ExecSlate Analysis: {currency}{total:,.0f} {project.get('report_title', 'Business Performance')}. "
+        f"This report examines {row_count} data measurement intervals across {region_count or 1} active segment(s). "
+        f"Current analysis framework: {project.get('analysis_framework', 'General Strategy').replace('_', ' ').title()}."
     )
     
-    summary = "\n".join(summary_parts)
+    # 2. Complication (The Challenge/Change)
+    comp_parts = []
+    comp_parts.append(f"Revenue performance {trend_desc}, showing a {abs(growth):.1f}% {trend.lower()} trajectory.")
+    if volatility > 20:
+        comp_parts.append(f"Significant volatility ({volatility:.1f}%) in period-over-period performance creates forecasting risk.")
+    if top_region_pct > 45:
+        comp_parts.append(f"High concentration in {top_region} ({top_region_pct:.0f}% of total) creates structural sensitivity to that specific segment.")
+    complication = " ".join(comp_parts)
+    
+    # 3. Question (The Strategic Pivot)
+    if growth > 10:
+        question = f"How can the organization best capitalize on this {abs(growth):.1f}% momentum without overextending resources or diluting margin?"
+    elif growth < 0:
+        question = f"What immediate stabilization measures are required to arrest the {abs(growth):.1f}% decline and return to baseline performance?"
+    else:
+        question = "In a period of relative stability, what are the primary levers for breaking out of this equilibrium into accelerated growth?"
+        
+    # 4. Answer (The Recommendation)
+    answer = f"{trend_outlook}. Analysis suggests prioritizing {top_region if top_region else 'top-performing segments'} for continued investment while addressing {f'{volatility:.1f}% volatility' if volatility > 20 else 'operational consistency'}."
+    
+    summary = f"<strong>SITUATION:</strong> {situation}<br><br><strong>COMPLICATION:</strong> {complication}<br><br><strong>QUESTION:</strong> {question}<br><br><strong>ANSWER:</strong> {answer}"
     
     # ── Build Enhanced Insights (6 total) ──
     insights = [
@@ -1019,46 +941,60 @@ def generate_ai_enhanced_insights(project):
             for name, info in kpi_metrics.items():
                 context_str += f"- {info.get('label', name)}: Total {ea.format_currency(info.get('total', 0), currency)}, Growth {info.get('growth', 0):+.1f}%, Trend: {info.get('trend', 'N/A')}\n"
 
-        prompt = f"""You are a senior management consultant preparing board-level analysis. Use professional consulting language.
+        # Framework-specific instructions
+        framework_focus = ""
+        framework = project.get("analysis_framework", "general")
+        if framework == "profitability":
+            framework_focus = "Focus on margin waterfalls, unit economics, and cost-to-revenue ratios."
+        elif framework == "market_entry":
+            framework_focus = "Focus on market size (TAM/SAM/SOM), competitive positioning, and entry barriers."
+        elif framework == "cost_reduction":
+            framework_focus = "Focus on operational inefficiencies, overhead bloat, and process simplification."
+
+        prompt = f"""You are a senior management consultant from a top-tier firm (McKinsey/BCG/Bain). 
+Preparing board-level analysis using the SCQA (Situation-Complication-Question-Answer) framework.
+
+STRATEGIC CONTEXT:
+- Analysis Framework: {framework}
+- {framework_focus}
 
 BUSINESS METRICS:
 - Primary KPI Total: {currency}{project.get('total_revenue', 0):,.2f}
 - Average per Period: {currency}{project.get('avg_revenue', 0):,.2f}
 - Growth Rate: {project.get('growth_rate', 0):+.1f}%
 - Trend: {project.get('trend', 'Unknown')}
-- Top Segment: {project.get('top_region', 'Not specified')}
 - Sample Size: {project.get('row_count', 0)} periods
-- Report Type: {project.get('report_title', 'Executive Performance Report')}
 
 {context_str}
 
-Provide executive-grade insights in VALID JSON format:
+Provide executive-grade insights in VALID JSON format.
+The 'summary' field MUST use the following pattern using HTML formatting:
+<strong>SITUATION:</strong> [The background/context]<br><br>
+<strong>COMPLICATION:</strong> [The core challenge or change identified in data]<br><br>
+<strong>QUESTION:</strong> [The strategic question the board must answer]<br><br>
+<strong>ANSWER:</strong> [Your data-driven recommendation]
+
+JSON Structure:
 {{
-  "summary": "3-4 sentence executive summary with strategic context, key performance drivers, and forward outlook. CITE SPECIFIC NUMBERS from the data.",
+  "summary": "SCQA formatted text blocks as described above.",
   "insights": [
-    {{"text": "consulting-grade insight 1 — cite specific dollar amounts and percentages", "sentiment": "positive"}},
-    {{"text": "insight 2 — compare performance across segments", "sentiment": "negative"}},
-    {{"text": "insight 3 — trend analysis with forward implications", "sentiment": "neutral"}},
-    {{"text": "insight 4 — risk or opportunity identification", "sentiment": "positive"}},
-    {{"text": "insight 5 — operational efficiency observation", "sentiment": "neutral"}},
-    {{"text": "insight 6 — competitive positioning or market context", "sentiment": "positive"}}
+    {{"text": "consulting-grade insight 1 — cite specific numbers", "sentiment": "positive"}},
+    {{"text": "insight 2 — negative or risk-based", "sentiment": "negative"}},
+    ... total 6 insights
   ],
   "recommendations": [
-    "strategic recommendation 1 with specific action steps",
-    "recommendation 2 with measurable target",
-    "recommendation 3 with timeline",
-    "recommendation 4 with resource implications",
-    "recommendation 5 with risk mitigation"
+    "strategic recommendation 1 with action steps",
+    ... total 5 recommendations
   ],
   "qa": [
-    {{"q": "What is driving current performance?", "a": "detailed strategic answer referencing the data"}},
-    {{"q": "How sustainable is this trajectory?", "a": "detailed risk assessment based on volatility and trend"}},
-    {{"q": "What are the strategic priorities?", "a": "detailed action items with KPI targets"}},
-    {{"q": "What risks require monitoring?", "a": "detailed risk analysis with mitigation strategies"}}
+    {{"q": "strategic question", "a": "detailed answer referencing data"}},
+    {{"q": "risk analysis", "a": "..."}},
+    {{"q": "sustainability", "a": "..."}},
+    {{"q": "action plan", "a": "..."}}
   ]
 }}
 
-Use consulting terminology. Reference actual numbers from the detailed segmentation. Be specific and actionable."""
+Deliver the narrative in an elite, decisive tone. Reference actual decimal percentages and rounded currency values."""
 
         # ── Multi-provider fallback chain ──
         content = ai_providers.get_ai_response(prompt, temperature=0.3)
@@ -1113,13 +1049,6 @@ def chart_narratives(project):
     return narratives
 
 
-
-
-# ==================== END OF PART 1 ====================
-# Next: Copy PART 2 (Chart Generation & Export Functions) AFTER this section
-
-# ==================== EXECSLATE - PART 2: CHARTS & EXPORT FUNCTIONS ====================
-# Instructions: This is PART 2 - Copy this AFTER Part 1 (after the generate_ai function)
 
 # ==================== CHART STYLING SETUP ====================
 sns.set_style("whitegrid")
@@ -1448,6 +1377,7 @@ async def upload(
     file: UploadFile = File(...),
     currency: str = Form(DEFAULT_CURRENCY),
     analysis_type: str = Form("standard"),
+    analysis_framework: str = Form("general"),
     user=Depends(require_user)
 ):
     """
@@ -1507,6 +1437,7 @@ async def upload(
     # Reset project data
     reset_project(project)
     project["currency"] = currency
+    project["analysis_framework"] = analysis_framework
 
     # Save uploaded file temporarily
     temp_file = None
@@ -1648,28 +1579,22 @@ async def upload(
 
     if insights.get("type") == "ai":
         project["ai_used"] = True
-        
-        # Increment AI usage
         if is_db_user:
-            db.update_user_stats(user["id"], ai_used=current_ai_usage + 1)
+            db.update_user_stats(user["id"], ai_used=True)
         else:
-            if user_email in users:
-                users[user_email]["ai_generations_used"] += 1
-    else:
-        project["ai_used"] = False
-        
-    # ================= FINALIZE REPORT =================
+            user_data = users.get(user_email, {})
+            user_data["ai_generations_used"] = user_data.get("ai_generations_used", 0) + 1
+            users[user_email] = user_data
 
+    # ================= FINALIZE REPORT =================
     project["confidence_score"] = calculate_confidence(project)
     project["generated"] = True
     project["generated_at"] = datetime.now().strftime("%B %d, %Y at %I:%M %p")
 
     # Persist changes
     if is_db_user:
-        # Only persist DB-safe fields
-        db_safe_fields = {
-            'client': project.get('client'),
-            'period': project.get('period'),
+        # Prepare DB fields (including new ones)
+        db_fields = {
             'currency': project.get('currency'),
             'total_revenue': project.get('total_revenue', 0),
             'avg_revenue': project.get('avg_revenue', 0),
@@ -1695,21 +1620,46 @@ async def upload(
             'kpi_metrics': project.get('kpi_metrics'),
             'primary_kpi': project.get('primary_kpi'),
             'report_title': project.get('report_title'),
+            'analysis_framework': project.get('analysis_framework'),
+            'hypotheses': project.get('hypotheses'),
+            'working_theory': project.get('working_theory'),
             'generated': True,
             'error': project.get('error'),
         }
-        # Remove None values
-        db_safe_fields = {k: v for k, v in db_safe_fields.items() if v is not None}
-        db.update_project(pid, user["id"], **db_safe_fields)
-        
+        # Update project in DB
+        db.update_project(pid, user["id"], **db_fields)
         # Update user upload count
         db.update_user_stats(user["id"], uploads=current_uploads + 1)
     else:
-        # In-memory user
-        project.setdefault("uploads", 0)
-        project["uploads"] += 1
+        # In-memory user logic
+        project["uploads"] = current_uploads + 1
         if user_email in users:
-            users[user_email]["uploads_used"] += 1
+            users[user_email]["uploads_used"] = current_uploads + 1
+
+    cleanup_temp_file(temp_file.name)
+    return RedirectResponse(f"/report/{pid}", 303)
+
+@app.post("/project/save_theory/{pid}")
+async def save_theory(
+    pid: int,
+    request: Request,
+    working_theory: str = Form(...),
+    user=Depends(require_user)
+):
+    """
+    Save consultant's qualitative working theory
+    """
+    is_db_user = "id" in user
+    user_email = user["email"]
+    
+    if is_db_user:
+        db.update_project(pid, user["id"], working_theory=working_theory)
+    else:
+        project = next((x for x in projects if x.get("id") == pid and x.get("user_email") == user_email), None)
+        if project:
+            project["working_theory"] = working_theory
+            
+    return RedirectResponse(f"/report/{pid}", 303)
 
     if temp_file and hasattr(temp_file, "name"):
         cleanup_temp_file(temp_file.name)
@@ -2048,20 +1998,4 @@ async def robots_txt():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
-# ==================== END OF PART 3 ====================
-# 
-# ✅ YOUR app.py IS NOW COMPLETE!
-# 
-# NEXT STEPS:
-# 1. Save this file as C:\ExecSlate\app.py
-# 2. Install dependencies: pip install fastapi uvicorn pandas numpy matplotlib seaborn openai reportlab python-pptx passlib bcrypt
-# 3. Run the server: python -m uvicorn app:app --reload
-# 4. Open browser: http://localhost:8000
-# 5. Login with: demo@execslate.ai / demo123
-# 6. Click "Daulaguphu Industries Ltd"
-# 7. Click "Load Demo Data"
-# 8. Export PDF and check quality!
-#
-# 🎉 CONGRATULATIONS - YOU'RE READY TO LAUNCH!
+    uvicorn.run(app, host="0.0.0.0", port=8000)
