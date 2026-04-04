@@ -10,7 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 import pandas as pd
 import numpy as np
-import os, json, tempfile, time, glob
+import os, json, tempfile, time, glob, shutil
 import matplotlib
 matplotlib.use('Agg')  # Non-GUI backend for server
 import matplotlib.pyplot as plt
@@ -788,7 +788,7 @@ def generate_statistical_insights(project):
     # 4. Answer (The Recommendation)
     answer = f"{trend_outlook}. Analysis suggests prioritizing {top_region if top_region else 'top-performing segments'} for continued investment while addressing {f'{volatility:.1f}% volatility' if volatility > 20 else 'operational consistency'}."
     
-    summary = f"<strong>SITUATION:</strong> {situation}<br><br><strong>COMPLICATION:</strong> {complication}<br><br><strong>QUESTION:</strong> {question}<br><br><strong>ANSWER:</strong> {answer}"
+    summary = f"<strong>SITUATION:</strong> {situation}<br/><br/><strong>COMPLICATION:</strong> {complication}<br/><br/><strong>QUESTION:</strong> {question}<br/><br/><strong>ANSWER:</strong> {answer}"
     
     # ── Build Enhanced Insights (6 total) ──
     insights = [
@@ -969,9 +969,9 @@ BUSINESS METRICS:
 
 Provide executive-grade insights in VALID JSON format.
 The 'summary' field MUST use the following pattern using HTML formatting:
-<strong>SITUATION:</strong> [The background/context]<br><br>
-<strong>COMPLICATION:</strong> [The core challenge or change identified in data]<br><br>
-<strong>QUESTION:</strong> [The strategic question the board must answer]<br><br>
+<strong>SITUATION:</strong> [The background/context]<br/><br/>
+<strong>COMPLICATION:</strong> [The core challenge or change identified in data]<br/><br/>
+<strong>QUESTION:</strong> [The strategic question the board must answer]<br/><br/>
 <strong>ANSWER:</strong> [Your data-driven recommendation]
 
 JSON Structure:
@@ -1439,7 +1439,7 @@ async def upload(
     project["currency"] = currency
     project["analysis_framework"] = analysis_framework
 
-    # Save uploaded file temporarily
+    # Save uploaded file persistently to uploads/ for Copilot access
     temp_file = None
     filename = file.filename.lower() if file.filename else ""
     is_excel = filename.endswith(('.xlsx', '.xls'))
@@ -1464,7 +1464,16 @@ async def upload(
             cleanup_temp_file(temp_file.name)
         return RedirectResponse(f"/report/{pid}", 303)
 
-    project["last_uploaded_file"] = temp_file.name
+    # Copy to persistent location so Copilot can access it after redeploys
+    persistent_filename = f"upload_{pid}{suffix}"
+    persistent_path = UPLOAD_DIR / persistent_filename
+    try:
+        shutil.copy2(temp_file.name, str(persistent_path))
+        project["last_uploaded_file"] = str(persistent_path)
+        log(f"File persisted to {persistent_path}")
+    except Exception as e:
+        logger.warning(f"Could not persist upload: {e}")
+        project["last_uploaded_file"] = temp_file.name
     project["available_columns"] = list(df.columns)
     
     # Smart column detection — find all metrics and dimensions
@@ -1661,11 +1670,6 @@ async def save_theory(
             
     return RedirectResponse(f"/report/{pid}", 303)
 
-    if temp_file and hasattr(temp_file, "name"):
-        cleanup_temp_file(temp_file.name)
-
-    return RedirectResponse(f"/report/{pid}", status_code=303)        
-  
 
 @app.post("/demo/{pid}")
 async def load_demo(pid: int, request: Request, user=Depends(require_user)):
@@ -1702,17 +1706,19 @@ async def load_demo(pid: int, request: Request, user=Depends(require_user)):
 1520,EU
 1670,APAC"""
     
-    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv', newline='')
-    temp_file.write(demo_data)
-    temp_file.close()
+    # Save demo CSV persistently so Copilot can access it later
+    persistent_demo_path = UPLOAD_DIR / f"demo_{pid}.csv"
+    with open(str(persistent_demo_path), 'w', newline='') as f:
+        f.write(demo_data)
     
     try:
-        df = pd.read_csv(temp_file.name)
+        df = pd.read_csv(str(persistent_demo_path))
         
         reset_project(project)
         project["currency"] = "$"
         project["available_columns"] = list(df.columns)
         project["column_map"] = {"revenue": "revenue", "region": "region"}
+        project["last_uploaded_file"] = str(persistent_demo_path)
         
         process_dataframe(project, df)
         
@@ -1765,18 +1771,22 @@ async def load_demo(pid: int, request: Request, user=Depends(require_user)):
         
         log(f"Demo data loaded for project {pid}")
         
-        # Persist changes
+        # Persist ALL fields (including Phase 1/2) to DB
         if is_db_user:
             db_safe_fields = {
                 'client': project.get('client'),
                 'currency': project.get('currency'),
                 'total_revenue': project.get('total_revenue', 0),
                 'avg_revenue': project.get('avg_revenue', 0),
+                'median_revenue': project.get('median_revenue', 0),
                 'growth_rate': project.get('growth_rate', 0),
                 'trend': project.get('trend'),
                 'top_region': project.get('top_region'),
                 'row_count': project.get('row_count', 0),
                 'confidence': project.get('confidence_score', 0),
+                'revenue_series': project.get('revenue_series'),
+                'region_labels': project.get('region_labels'),
+                'region_values': project.get('region_values'),
                 'ai_summary': project.get('ai_summary'),
                 'ai_insights': project.get('ai_insights'),
                 'ai_recommendations': project.get('ai_recommendations'),
@@ -1784,14 +1794,25 @@ async def load_demo(pid: int, request: Request, user=Depends(require_user)):
                 'revenue_chart': project.get('revenue_chart'),
                 'region_chart': project.get('region_chart'),
                 'chart_narratives': project.get('chart_narratives'),
+                'available_columns': project.get('available_columns'),
+                'column_map': project.get('column_map'),
                 'report_type': project.get('report_type', 'statistical'),
+                'kpi_metrics': project.get('kpi_metrics'),
+                'primary_kpi': project.get('primary_kpi'),
+                'report_title': project.get('report_title'),
+                'analysis_framework': project.get('analysis_framework'),
+                'hypotheses': project.get('hypotheses'),
+                'working_theory': project.get('working_theory'),
+                'last_uploaded_file': str(persistent_demo_path),
                 'generated': True,
+                'error': project.get('error'),
             }
             db_safe_fields = {k: v for k, v in db_safe_fields.items() if v is not None}
             db.update_project(pid, user["id"], **db_safe_fields)
         
-    finally:
-        cleanup_temp_file(temp_file.name)
+    except Exception as e:
+        logger.error(f"Demo data loading failed: {e}", exc_info=True)
+        project["error"] = "Failed to load demo data. Please try again."
     
     return RedirectResponse(f"/report/{pid}", 303)
 

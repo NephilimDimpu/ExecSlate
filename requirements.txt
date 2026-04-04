@@ -20,3 +20,5 @@ resend
 langchain
 langchain-experimental
 langchain-openai
+tabulate
+numpy

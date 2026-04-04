@@ -47,6 +47,26 @@ def _hex(key):
     return colors.HexColor(BRAND[key])
 
 
+def _sanitize_for_reportlab(text):
+    """
+    Sanitize HTML text for ReportLab's strict XML parser.
+    Converts non-XHTML tags and strips unsupported elements.
+    """
+    if not text:
+        return text
+    # Convert <br> (non-self-closing) to <br/> (XHTML)
+    text = re.sub(r'<br\s*>', '<br/>', text)
+    # Strip any tags ReportLab doesn't understand (keep: strong, b, i, u, br, font, a, sup, sub)
+    # Remove: div, span, p, h1-h6, etc.
+    allowed_tags = {'strong', 'b', 'i', 'u', 'br', 'font', 'a', 'sup', 'sub'}
+    def _strip_tag(match):
+        tag_name = match.group(1).lower().strip('/')
+        if tag_name in allowed_tags:
+            return match.group(0)
+        return ''
+    text = re.sub(r'<(/?\w+)[^>]*/?>', _strip_tag, text)
+    return text
+
 # ╔════════════════════════════════════════════════════════════╗
 # ║                   PDF EXPORT (ReportLab)                  ║
 # ╚════════════════════════════════════════════════════════════╝
@@ -268,7 +288,7 @@ def export_pdf_enhanced(project, output_path, user_plan="free"):
         Story.append(Spacer(1, 12))
 
     Story.append(_section_header("Executive Summary", styles))
-    summary = project.get("ai_summary", "No summary available.")
+    summary = _sanitize_for_reportlab(project.get("ai_summary", "No summary available."))
     Story.append(Paragraph(summary, normal))
     Story.append(Spacer(1, 16))
 
@@ -568,7 +588,7 @@ def export_ppt_enhanced(project, output_path, user_plan="free"):
                       font_size=24, bold=True, color="ffffff")
 
     # Left: summary text
-    summary = project.get("ai_summary", "No summary available.")
+    summary = re.sub(r'<[^>]+>', '', project.get("ai_summary", "No summary available."))
     tf = _ppt_add_textbox(slide, 0.8, 1.3, 6.5, 5.0, summary,
                            font_size=13, color="cbd5e1")
     tf.word_wrap = True

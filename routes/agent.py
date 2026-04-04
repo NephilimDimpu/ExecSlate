@@ -37,11 +37,24 @@ def setup(app_module):
         if not filename:
              raise HTTPException(status_code=400, detail="No data file associated with this project")
              
-        file_path = Path(UPLOAD_DIR) / f"{project_id}_{filename}"
+        # Try multiple paths: the stored path itself, then fallback patterns
+        file_path = Path(filename)
         if not file_path.exists():
-            file_path = Path(UPLOAD_DIR) / filename
-            if not file_path.exists():
-                raise HTTPException(status_code=404, detail="Data file not found on server")
+            # Try as relative to UPLOAD_DIR
+            file_path = Path(UPLOAD_DIR) / Path(filename).name
+        if not file_path.exists():
+            # Try persistent upload pattern
+            file_path = Path(UPLOAD_DIR) / f"upload_{project_id}.csv"
+        if not file_path.exists():
+            file_path = Path(UPLOAD_DIR) / f"upload_{project_id}.xlsx"
+        if not file_path.exists():
+            # Try demo pattern
+            file_path = Path(UPLOAD_DIR) / f"demo_{project_id}.csv"
+        if not file_path.exists():
+            # Try legacy pattern
+            file_path = Path(UPLOAD_DIR) / f"{project_id}_{Path(filename).name}"
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Data file not found on server. Please re-upload your data.")
                 
         try:
             if str(file_path).endswith(('.xlsx', '.xls')):
