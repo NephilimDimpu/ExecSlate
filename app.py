@@ -1002,15 +1002,56 @@ Deliver the narrative in an elite, decisive tone. Reference actual decimal perce
         if content is None:
             raise RuntimeError("AI_FAILED: All AI providers exhausted. Falling back to statistical insights.")
         
-        # Clean markdown code fences if present
-        if content.startswith("```"):
-            content = content.split("```")[1]
-            if content.startswith("json"):
-                content = content[4:]
+        # Robust JSON extraction — handle markdown fences, extra text, etc.
+        import re
+        raw = content.strip()
         
-        ai_result = json.loads(content)
+        # Strip markdown code fences (```json ... ``` or ``` ... ```)
+        fence_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?\s*```', raw, re.DOTALL)
+        if fence_match:
+            raw = fence_match.group(1).strip()
+        
+        # Sanitize control characters inside JSON strings (Llama/Groq puts literal 
+        # newlines inside string values around <br/> tags, breaking json.loads)
+        # Replace literal newlines/tabs that aren't structural JSON whitespace
+        def _sanitize_json_string(s):
+            """Remove literal control chars from inside JSON string values."""
+            # First try as-is
+            try:
+                return json.loads(s)
+            except json.JSONDecodeError:
+                pass
+            # Replace literal newlines/tabs within strings with spaces
+            sanitized = re.sub(r'(?<=": ")(.*?)(?="[,\s*}])', 
+                             lambda m: m.group(0).replace('\n', ' ').replace('\r', ' ').replace('\t', ' '),
+                             s, flags=re.DOTALL)
+            # If that doesn't work, brute-force: replace all control chars except structural ones
+            try:
+                return json.loads(sanitized)
+            except json.JSONDecodeError:
+                pass
+            # Nuclear option: remove ALL control characters except those in JSON structure
+            cleaned = re.sub(r'[\x00-\x1f\x7f]', ' ', s)
+            return json.loads(cleaned)
+        
+        # Try direct parse first
+        try:
+            ai_result = _sanitize_json_string(raw)
+        except json.JSONDecodeError:
+            # Fallback: find the first { ... } block in the response
+            brace_match = re.search(r'\{.*\}', raw, re.DOTALL)
+            if brace_match:
+                try:
+                    ai_result = _sanitize_json_string(brace_match.group(0))
+                except json.JSONDecodeError as e2:
+                    logger.error(f"AI JSON extraction failed. Raw content (first 500 chars): {raw[:500]}")
+                    raise RuntimeError(f"AI_FAILED: AI returned invalid JSON — {str(e2)}")
+            else:
+                logger.error(f"No JSON found in AI response. Raw content (first 500 chars): {raw[:500]}")
+                raise RuntimeError("AI_FAILED: AI response did not contain valid JSON")
+        
         ai_result["type"] = "ai"
-        logger.info(f"✨ AI insights generated for project {project['id']}")
+        logger.info(f"AI insights generated for project {project['id']}")
         return ai_result
         
     except json.JSONDecodeError as e:
