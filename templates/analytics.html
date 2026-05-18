@@ -80,6 +80,37 @@
         .upload-submit-btn:hover { opacity: 0.88; }
         .upload-hint { font-size: 0.78rem; color: var(--text-muted, #94a3b8); margin-top: 0.75rem; }
 
+        /* ── Ordered file list ── */
+        .file-order-list { list-style: none; padding: 0; margin: 1rem 0 0; text-align: left; }
+        .file-order-item {
+            display: flex; align-items: center; gap: 0.6rem;
+            background: var(--hover-bg, #f8fafc);
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 8px; padding: 0.55rem 0.75rem; margin-bottom: 0.5rem;
+            font-size: 0.83rem; color: var(--text, #1e293b);
+        }
+        .file-order-num {
+            flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+            background: var(--accent, #1e40af); color: #fff;
+            font-size: 0.72rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .file-order-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .file-order-btn {
+            flex-shrink: 0; background: none; border: 1px solid var(--border, #e2e8f0);
+            border-radius: 5px; width: 24px; height: 24px; cursor: pointer;
+            color: var(--text-muted, #64748b); font-size: 0.8rem; line-height: 1;
+            display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+        }
+        .file-order-btn:hover:not(:disabled) { border-color: var(--accent, #1e40af); color: var(--accent, #1e40af); }
+        .file-order-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .file-order-btn.remove:hover { border-color: #dc2626; color: #dc2626; }
+        .add-more-btn {
+            display: inline-block; margin-top: 0.25rem; font-size: 0.8rem;
+            color: var(--accent, #1e40af); background: none; border: none;
+            cursor: pointer; text-decoration: underline;
+        }
+
         /* ── Stat bar ── */
         .analytics-stat-bar {
             display: flex;
@@ -298,10 +329,11 @@
     <!-- ================= UPLOAD ZONE (no session yet) ================= -->
     <div class="upload-zone">
         <h2>Upload Your Data</h2>
-        <p>Upload any CSV or Excel file — ExecSlate will detect your KPIs, generate charts, and produce analytics insights instantly.</p>
+        <p>Upload one file, or multiple files and arrange them in the order you want them combined. ExecSlate stacks them in sequence, then detects KPIs, generates charts, and produces insights.</p>
 
-        <form action="/analytics/{{ project.id }}/upload" method="post" enctype="multipart/form-data"
-              onsubmit="showLoading()">
+        <form id="uploadForm" action="/analytics/{{ project.id }}/upload" method="post"
+              enctype="multipart/form-data"
+              onsubmit="return prepareSubmit(event, 'fileInput', 'mainList')">
             <div class="upload-form-row">
                 <select name="currency" class="upload-currency-select">
                     <option value="$">$ USD</option>
@@ -309,12 +341,16 @@
                     <option value="€">€ EUR</option>
                     <option value="£">£ GBP</option>
                 </select>
-                <input type="file" name="file" accept=".csv,.xlsx,.xls" required class="upload-file-input">
+                <input type="file" id="fileInput" name="files" accept=".csv,.xlsx,.xls" multiple
+                       class="upload-file-input" onchange="addFiles('fileInput', 'mainList')">
             </div>
+
+            <ul class="file-order-list" id="mainList"></ul>
+
             <button type="submit" class="upload-submit-btn">Analyse Data →</button>
         </form>
 
-        <p class="upload-hint">Accepts CSV and Excel files up to 5MB. No required column names — ExecSlate auto-detects everything.</p>
+        <p class="upload-hint">Accepts CSV and Excel files, 5MB total. Multiple files must share the same column headers. Use the arrows to set the sequence (e.g. Jan → Feb → Mar).</p>
     </div>
 
     {% else %}
@@ -458,18 +494,20 @@
         <div class="reupload-modal-inner">
             <button class="modal-close" onclick="closeReupload()">×</button>
             <div class="reupload-modal-title">Upload New Data</div>
-            <div class="reupload-modal-sub">This will replace the current analytics session for this project.</div>
+            <div class="reupload-modal-sub">This replaces the current analytics session. Add one or more files and order them as needed.</div>
             <form action="/analytics/{{ project.id }}/upload" method="post" enctype="multipart/form-data"
-                  onsubmit="showLoading()">
-                <div style="display:flex;gap:0.75rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
+                  onsubmit="return prepareSubmit(event, 'reInput', 'reList')">
+                <div style="display:flex;gap:0.75rem;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap;">
                     <select name="currency" class="upload-currency-select">
                         <option value="$">$ USD</option>
                         <option value="₹">₹ INR</option>
                         <option value="€">€ EUR</option>
                         <option value="£">£ GBP</option>
                     </select>
-                    <input type="file" name="file" accept=".csv,.xlsx,.xls" required style="font-size:0.85rem;">
+                    <input type="file" id="reInput" name="files" accept=".csv,.xlsx,.xls" multiple
+                           style="font-size:0.85rem;" onchange="addFiles('reInput', 'reList')">
                 </div>
+                <ul class="file-order-list" id="reList"></ul>
                 <button type="submit" class="upload-submit-btn">Re-analyse →</button>
             </form>
         </div>
@@ -515,6 +553,69 @@
                     i++;
                 }
             }, 1500);
+        }
+
+        // ── Ordered multi-file management ──
+        const fileStore = {};  // listId -> [File, File, ...]
+
+        function addFiles(inputId, listId) {
+            const input = document.getElementById(inputId);
+            if (!fileStore[listId]) fileStore[listId] = [];
+            for (const f of input.files) {
+                // skip exact duplicates (same name + size)
+                const dupe = fileStore[listId].some(x => x.name === f.name && x.size === f.size);
+                if (!dupe) fileStore[listId].push(f);
+            }
+            input.value = '';  // allow re-selecting / adding more
+            renderFileList(listId);
+        }
+
+        function renderFileList(listId) {
+            const ul = document.getElementById(listId);
+            const files = fileStore[listId] || [];
+            ul.innerHTML = '';
+            files.forEach((f, i) => {
+                const li = document.createElement('li');
+                li.className = 'file-order-item';
+                li.innerHTML = `
+                    <span class="file-order-num">${i + 1}</span>
+                    <span class="file-order-name" title="${f.name}">${f.name}</span>
+                    <button type="button" class="file-order-btn" ${i === 0 ? 'disabled' : ''}
+                            onclick="moveFile('${listId}', ${i}, -1)" title="Move up">▲</button>
+                    <button type="button" class="file-order-btn" ${i === files.length - 1 ? 'disabled' : ''}
+                            onclick="moveFile('${listId}', ${i}, 1)" title="Move down">▼</button>
+                    <button type="button" class="file-order-btn remove"
+                            onclick="removeFile('${listId}', ${i})" title="Remove">×</button>`;
+                ul.appendChild(li);
+            });
+        }
+
+        function moveFile(listId, idx, dir) {
+            const arr = fileStore[listId];
+            const j = idx + dir;
+            if (j < 0 || j >= arr.length) return;
+            [arr[idx], arr[j]] = [arr[j], arr[idx]];
+            renderFileList(listId);
+        }
+
+        function removeFile(listId, idx) {
+            fileStore[listId].splice(idx, 1);
+            renderFileList(listId);
+        }
+
+        function prepareSubmit(event, inputId, listId) {
+            const files = fileStore[listId] || [];
+            if (files.length === 0) {
+                event.preventDefault();
+                alert('Please add at least one file to analyse.');
+                return false;
+            }
+            // Rebuild the file input in the user-chosen order
+            const dt = new DataTransfer();
+            files.forEach(f => dt.items.add(f));
+            document.getElementById(inputId).files = dt.files;
+            showLoading();
+            return true;
         }
 
         function switchChart(type, btn) {

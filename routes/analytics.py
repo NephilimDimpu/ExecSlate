@@ -134,7 +134,7 @@ def setup(app_module):
     async def analytics_upload(
         pid: int,
         request: Request,
-        file: UploadFile = File(...),
+        files: List[UploadFile] = File(...),
         currency: str = Form("$"),
         user=Depends(require_user),
     ):
@@ -145,24 +145,54 @@ def setup(app_module):
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
 
-        # ── Read & validate file ──
-        contents = await file.read()
-        if len(contents) > MAX_ANALYTICS_FILE_SIZE:
-            raise HTTPException(status_code=400, detail="File too large (max 5MB)")
+        import pandas as pd
 
-        fname = file.filename or ""
-        try:
-            if fname.endswith(('.xlsx', '.xls')):
-                import pandas as pd
-                df = pd.read_excel(io.BytesIO(contents))
-            else:
-                import pandas as pd
-                df = pd.read_csv(io.BytesIO(contents))
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Could not read file: {e}")
+        if not files:
+            raise HTTPException(status_code=400, detail="No files uploaded.")
+
+        # ── Read each file IN THE GIVEN ORDER, validate, and stack ──
+        dfs = []
+        total_size = 0
+        reference_cols = None
+        for idx, f in enumerate(files):
+            contents = await f.read()
+            total_size += len(contents)
+            if total_size > MAX_ANALYTICS_FILE_SIZE:
+                raise HTTPException(status_code=400, detail="Combined file size too large (max 5MB total).")
+
+            fname = f.filename or f"file {idx + 1}"
+            try:
+                if fname.endswith(('.xlsx', '.xls')):
+                    fdf = pd.read_excel(io.BytesIO(contents))
+                else:
+                    fdf = pd.read_csv(io.BytesIO(contents))
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Could not read '{fname}': {e}")
+
+            if fdf.empty or len(fdf.columns) == 0:
+                raise HTTPException(status_code=400, detail=f"'{fname}' appears to be empty.")
+
+            cols = list(fdf.columns)
+            if reference_cols is None:
+                reference_cols = cols
+            elif set(cols) != set(reference_cols):
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Column mismatch in '{fname}'. To combine files in sequence, every file "
+                        f"must have the same column headers as the first file. "
+                        f"Expected: {', '.join(map(str, reference_cols))}."
+                    ),
+                )
+            # Align column order to the first file before stacking
+            fdf = fdf[reference_cols]
+            dfs.append(fdf)
+
+        # ── Concatenate in the user-specified order (single file → just itself) ──
+        df = pd.concat(dfs, ignore_index=True)
 
         if df.empty or len(df.columns) == 0:
-            raise HTTPException(status_code=400, detail="File appears to be empty.")
+            raise HTTPException(status_code=400, detail="Combined dataset is empty.")
 
         # ── Detect columns ──
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
