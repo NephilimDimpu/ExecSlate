@@ -1254,7 +1254,7 @@ export_routes.setup(_this)
 admin_routes.setup(_this)
 payment_routes.setup(_this)
 agent_routes.setup(_this)
-analytics_routes.setup(_this)
+analytics_routes.setup(_this)  # needs: db, templates, require_user, ea, ai_providers
 
 # Include routers
 app.include_router(auth_routes.router)
