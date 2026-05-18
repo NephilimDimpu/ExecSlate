@@ -309,6 +309,11 @@ projects = [
 
 next_project_id = 3
 
+# In-memory analytics storage for non-DB (admin/demo) accounts — mirrors the
+# dual-storage pattern used for `projects`. Keyed by project id.
+analytics_sessions_mem = {}   # {project_id: session_dict}
+analytics_drafts_mem = {}     # {project_id: [draft_dict, ...]}
+
 # ==================== HELPER FUNCTIONS ====================
 
 def log(event: str, details: str = ""):

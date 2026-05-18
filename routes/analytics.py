@@ -91,30 +91,68 @@ def setup(app_module):
     require_user = app_module.require_user
     ea = app_module.ea
     ai_providers = app_module.ai_providers
+    is_demo_user = app_module.is_demo_user
+
+    def _is_db_user(user):
+        """Registered users have a DB id; admin/demo are in-memory."""
+        return "id" in user
+
+    def _find_project(pid, user):
+        """Look up a project for both DB-backed and in-memory accounts."""
+        if _is_db_user(user):
+            return db.get_project(pid, user["id"])
+        return next(
+            (x for x in app_module.projects
+             if x.get("id") == pid and x.get("user_email") == user["email"]),
+            None,
+        )
+
+    def _save_session(pid, user, **kw):
+        if _is_db_user(user):
+            db.create_analytics_session(project_id=pid, **kw)
+        else:
+            app_module.analytics_sessions_mem[pid] = {"id": pid, "project_id": pid, **kw}
+
+    def _latest_session(pid, user):
+        if _is_db_user(user):
+            return db.get_latest_analytics_session(pid)
+        return app_module.analytics_sessions_mem.get(pid)
+
+    def _save_draft(pid, user, name, kpi_snapshot, selected_insights, notes):
+        if _is_db_user(user):
+            return db.create_analytics_draft(
+                project_id=pid, name=name,
+                kpi_snapshot=kpi_snapshot, selected_insights=selected_insights, notes=notes,
+            )
+        store = app_module.analytics_drafts_mem.setdefault(pid, [])
+        draft_id = len(store) + 1
+        store.insert(0, {
+            "id": draft_id, "project_id": pid, "name": name,
+            "kpi_snapshot": kpi_snapshot, "selected_insights": selected_insights,
+            "notes": notes, "created_at": None,
+        })
+        return draft_id
+
+    def _list_drafts(pid, user):
+        if _is_db_user(user):
+            return db.get_analytics_drafts(pid)
+        return app_module.analytics_drafts_mem.get(pid, [])
 
     # ── Analytics workspace page ──────────────────────────────────────────────
 
     @router.get("/analytics/{pid}")
     def analytics_workspace(pid: int, request: Request, user=Depends(require_user)):
-        if "id" in user:
-            project = db.get_project(pid, user["id"])
-        else:
-            from app import projects
-            project = next(
-                (x for x in projects if x.get("id") == pid and x.get("user_email") == user["email"]),
-                None,
-            )
+        project = _find_project(pid, user)
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
 
         session = None
         drafts = []
-        if "id" in user:
-            try:
-                session = db.get_latest_analytics_session(pid)
-                drafts = db.get_analytics_drafts(pid)
-            except Exception:
-                pass
+        try:
+            session = _latest_session(pid, user)
+            drafts = _list_drafts(pid, user)
+        except Exception:
+            pass
 
         return templates.TemplateResponse(
             request=request,
@@ -138,10 +176,10 @@ def setup(app_module):
         currency: str = Form("$"),
         user=Depends(require_user),
     ):
-        if "id" not in user:
-            raise HTTPException(status_code=403, detail="Demo users cannot upload in Analytics. Please register.")
+        if is_demo_user(user):
+            raise HTTPException(status_code=403, detail="Demo accounts cannot upload in Analytics. Please register a free account.")
 
-        project = db.get_project(pid, user["id"])
+        project = _find_project(pid, user)
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
 
@@ -316,10 +354,10 @@ Return exactly 6 bullet insights, one per line, starting with •. No markdown h
             dtype = str(df[col].dtype)
             column_summary[col] = "numeric" if "int" in dtype or "float" in dtype else "text"
 
-        # ── Save session ──
+        # ── Save session (DB for registered users, in-memory for admin/demo) ──
         try:
-            db.create_analytics_session(
-                project_id=pid,
+            _save_session(
+                pid, user,
                 currency=currency,
                 row_count=len(df),
                 confidence=confidence,
@@ -345,16 +383,16 @@ Return exactly 6 bullet insights, one per line, starting with •. No markdown h
         user = request.session.get("user")
         if not user:
             raise HTTPException(status_code=401, detail="Unauthorized")
-        if "id" not in user:
-            return JSONResponse({"ok": False, "error": "Demo users cannot save drafts"}, status_code=403)
+        if is_demo_user(user):
+            return JSONResponse({"ok": False, "error": "Demo accounts cannot save drafts"}, status_code=403)
 
-        project = db.get_project(pid, user["id"])
+        project = _find_project(pid, user)
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
 
         try:
-            draft_id = db.create_analytics_draft(
-                project_id=pid,
+            draft_id = _save_draft(
+                pid, user,
                 name=payload.name or "Draft",
                 kpi_snapshot=payload.kpi_snapshot or [],
                 selected_insights=payload.selected_insights or [],
@@ -372,11 +410,9 @@ Return exactly 6 bullet insights, one per line, starting with •. No markdown h
         user = request.session.get("user")
         if not user:
             raise HTTPException(status_code=401, detail="Unauthorized")
-        if "id" not in user:
-            return {"drafts": []}
 
-        project = db.get_project(pid, user["id"])
+        project = _find_project(pid, user)
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
 
-        return {"drafts": db.get_analytics_drafts(pid)}
+        return {"drafts": _list_drafts(pid, user)}
