@@ -84,6 +84,16 @@ class Project(Base):
     error = Column(String)
     created_at = Column(DateTime, server_default=func.now())
 
+class AnalyticsDraft(Base):
+    __tablename__ = "analytics_drafts"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, default="Draft 1")
+    kpi_snapshot = Column(Text)       # JSON list of selected KPI keys
+    selected_insights = Column(Text)  # JSON list of pinned insight strings
+    notes = Column(Text)
+    created_at = Column(DateTime, server_default=func.now())
+
 class Payment(Base):
     __tablename__ = "payments"
     id = Column(Integer, primary_key=True, index=True)
@@ -332,6 +342,57 @@ def get_user_payments(user_id):
             }
             for p in payments
         ]
+
+# ==================== ANALYTICS DRAFT OPERATIONS ====================
+
+def create_analytics_draft(project_id, name, kpi_snapshot, selected_insights, notes):
+    with SessionLocal() as db_session:
+        draft = AnalyticsDraft(
+            project_id=project_id,
+            name=name or "Draft",
+            kpi_snapshot=json.dumps(kpi_snapshot) if kpi_snapshot else None,
+            selected_insights=json.dumps(selected_insights) if selected_insights else None,
+            notes=notes,
+        )
+        db_session.add(draft)
+        db_session.commit()
+        db_session.refresh(draft)
+        return draft.id
+
+def get_analytics_drafts(project_id):
+    with SessionLocal() as db_session:
+        drafts = db_session.query(AnalyticsDraft).filter(
+            AnalyticsDraft.project_id == project_id
+        ).order_by(AnalyticsDraft.created_at.desc()).all()
+        return [
+            {
+                "id": d.id,
+                "project_id": d.project_id,
+                "name": d.name,
+                "kpi_snapshot": json.loads(d.kpi_snapshot) if d.kpi_snapshot else [],
+                "selected_insights": json.loads(d.selected_insights) if d.selected_insights else [],
+                "notes": d.notes,
+                "created_at": d.created_at.isoformat() if d.created_at else None,
+            }
+            for d in drafts
+        ]
+
+def get_latest_analytics_draft(project_id):
+    with SessionLocal() as db_session:
+        draft = db_session.query(AnalyticsDraft).filter(
+            AnalyticsDraft.project_id == project_id
+        ).order_by(AnalyticsDraft.created_at.desc()).first()
+        if not draft:
+            return None
+        return {
+            "id": draft.id,
+            "project_id": draft.project_id,
+            "name": draft.name,
+            "kpi_snapshot": json.loads(draft.kpi_snapshot) if draft.kpi_snapshot else [],
+            "selected_insights": json.loads(draft.selected_insights) if draft.selected_insights else [],
+            "notes": draft.notes,
+            "created_at": draft.created_at.isoformat() if draft.created_at else None,
+        }
 
 # Initialize database on module import
 init_db()
