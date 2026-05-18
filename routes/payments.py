@@ -120,6 +120,17 @@ def setup(app_module):
 
         if is_db_user:
             db.update_user_stats(user["id"], plan=plan)
+            # Log the payment transaction to the database
+            plan_info = PLAN_PRICES.get(plan, {"amount": 0, "currency": "INR"})
+            db.create_payment(
+                user_id=user["id"],
+                email=user["email"],
+                order_id=razorpay_order_id,
+                payment_id=razorpay_payment_id,
+                amount=float(plan_info["amount"]) / 100.0,
+                currency=plan_info["currency"],
+                plan=plan
+            )
         else:
             user_email = user["email"]
             if user_email in users:
@@ -176,6 +187,16 @@ def setup(app_module):
                     # Upgrade via DB
                     if user_id:
                         db.update_user_stats(int(user_id), plan=plan)
+                        # Log payment transaction if user is in DB
+                        db.create_payment(
+                            user_id=int(user_id),
+                            email=email,
+                            order_id=payment.get("order_id", ""),
+                            payment_id=payment.get("id", ""),
+                            amount=float(payment.get("amount", 0)) / 100.0,
+                            currency=payment.get("currency", "INR"),
+                            plan=plan
+                        )
                     # Upgrade via in-memory
                     if email in users:
                         users[email]["plan"] = plan

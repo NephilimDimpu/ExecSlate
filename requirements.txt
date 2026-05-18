@@ -22,3 +22,5 @@ langchain-experimental
 langchain-openai
 tabulate
 numpy
+python-dotenv
+gunicorn

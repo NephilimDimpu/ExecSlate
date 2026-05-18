@@ -1,7 +1,7 @@
 """
 ExecSlate AI Provider Fallback Chain
 =====================================
-Cascading AI providers: OpenAI → Gemini(s) → Groq(s) → None
+Cascading AI providers: OpenAI → Gemini(s) → Groq(s) → Cerebras → OpenRouter → None
 
 Supports MULTIPLE keys per provider via comma-separated env vars:
     GEMINI_API_KEY=key1,key2,key3
@@ -12,9 +12,11 @@ All providers use the OpenAI-compatible API format.
 
 Setup:
     Set any combination of these environment variables:
-    - OPENAI_API_KEY    → OpenAI (gpt-4.1-mini)
-    - GEMINI_API_KEY    → Google Gemini (gemini-2.0-flash) — FREE: 15 RPM, 1M tokens/day per key
-    - GROQ_API_KEY      → Groq (llama-3.3-70b-versatile) — FREE: 30 RPM per key
+    - OPENAI_API_KEY      → OpenAI (gpt-4.1-mini)
+    - GEMINI_API_KEY      → Google Gemini (gemini-2.0-flash) — FREE: 15 RPM, 1M tokens/day per key
+    - GROQ_API_KEY        → Groq (llama-3.3-70b-versatile) — FREE: 30 RPM per key
+    - CEREBRAS_API_KEY    → Cerebras (llama-3.3-70b) — FREE: ultra-fast wafer-scale inference
+    - OPENROUTER_API_KEY  → OpenRouter (routes to best free model) — FREE: many models available
 
     Multiple keys: separate with commas (no spaces):
     - GEMINI_API_KEY=AIzaKey1,AIzaKey2
@@ -25,6 +27,13 @@ import os
 import json
 import logging
 from typing import Optional, Dict, Any, List
+
+# Load .env file if present (for local development)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed; rely on system env vars
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +89,30 @@ def _init_providers():
             "max_tokens": 2000,
         })
         logger.info(f"✅ AI Provider: Groq key {i+1}/{len(groq_keys)} ({key[:8]}...{key[-4:]})")
+
+    # Provider 4: Cerebras — ultra-fast wafer-scale inference
+    cerebras_keys = _parse_keys("CEREBRAS_API_KEY")
+    for i, key in enumerate(cerebras_keys):
+        PROVIDERS.append({
+            "name": f"Cerebras{'[' + str(i+1) + ']' if len(cerebras_keys) > 1 else ''}",
+            "api_key": key,
+            "base_url": "https://api.cerebras.ai/v1",
+            "model": "llama-3.3-70b",
+            "max_tokens": 2000,
+        })
+        logger.info(f"✅ AI Provider: Cerebras key {i+1}/{len(cerebras_keys)} ({key[:8]}...{key[-4:]})")
+
+    # Provider 5: OpenRouter — gateway to dozens of models (ultimate safety net)
+    openrouter_keys = _parse_keys("OPENROUTER_API_KEY")
+    for i, key in enumerate(openrouter_keys):
+        PROVIDERS.append({
+            "name": f"OpenRouter{'[' + str(i+1) + ']' if len(openrouter_keys) > 1 else ''}",
+            "api_key": key,
+            "base_url": "https://openrouter.ai/api/v1",
+            "model": "meta-llama/llama-3.3-70b-instruct:free",
+            "max_tokens": 2000,
+        })
+        logger.info(f"✅ AI Provider: OpenRouter key {i+1}/{len(openrouter_keys)} ({key[:8]}...{key[-4:]})")
 
     if not PROVIDERS:
         logger.warning("⚠️ No AI providers configured — AI insights will use statistical fallback")
@@ -143,7 +176,7 @@ def get_ai_response(prompt: str, temperature: float = 0.3) -> Optional[str]:
     Returns the response text from the first provider that succeeds,
     or None if all providers fail.
 
-    The chain: OpenAI → Gemini[1] → Gemini[2] → Groq[1] → Groq[2] → None
+    The chain: OpenAI → Gemini → Groq → Cerebras → OpenRouter → None
     """
     if not PROVIDERS:
         logger.info("No AI providers available — using statistical fallback")

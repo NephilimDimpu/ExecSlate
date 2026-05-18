@@ -237,8 +237,12 @@ async def global_exception_handler(request: Request, exc: Exception):
     
     # Check if it's an HTTPException
     status_code = getattr(exc, 'status_code', 500)
-    # FOR DEBUGGING: Show the actual error message even for 500s
-    detail = getattr(exc, 'detail', str(exc))
+    
+    # Do not leak internal server details in production for unhandled 500 errors
+    if ENV == "production" and status_code == 500:
+        detail = "An internal server error occurred. Our team has been notified. Please try again later."
+    else:
+        detail = getattr(exc, 'detail', str(exc))
     
     # Return JSON for API routes
     if request.url.path.startswith("/api/"):
@@ -260,7 +264,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 users = {
     "admin@execslate.com": {
         "email": "admin@execslate.com",
-        "password": hash_password("admin123"),
+        "password": hash_password(os.getenv("ADMIN_PASSWORD", "admin123")),
         "plan": "pro",
         "uploads_used": 0,
         "ai_generations_used": 0,
@@ -2049,6 +2053,12 @@ async def startup_event():
     logger.info(f"OpenAI: {'✅ Enabled' if client else '⚠️ Disabled (using mock data)'}")
     logger.info(f"Base Directory: {BASE_DIR}")
     logger.info("=" * 60)
+
+# ==================== HEALTH CHECK ====================
+@app.get("/health")
+async def health_check():
+    """Health check for Render deployment"""
+    return {"status": "healthy", "environment": ENV}
 
 # ==================== ROBOTS.TXT ====================
 @app.get("/robots.txt")

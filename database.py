@@ -84,6 +84,19 @@ class Project(Base):
     error = Column(String)
     created_at = Column(DateTime, server_default=func.now())
 
+class Payment(Base):
+    __tablename__ = "payments"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    email = Column(String, nullable=False)
+    order_id = Column(String, nullable=False)
+    payment_id = Column(String, unique=True, nullable=False)
+    amount = Column(Float, nullable=False)
+    currency = Column(String, default='INR')
+    plan = Column(String, nullable=False)
+    status = Column(String, default='captured')
+    created_at = Column(DateTime, server_default=func.now())
+
 # ==================== HELPERS ====================
 
 def init_db():
@@ -275,6 +288,50 @@ def delete_project(project_id, user_id):
             logger.info(f"✅ Deleted project {project_id}")
             return True
         return False
+
+# ==================== PAYMENT OPERATIONS ====================
+
+def create_payment(user_id, email, order_id, payment_id, amount, currency, plan, status='captured'):
+    with SessionLocal() as db:
+        payment = Payment(
+            user_id=user_id,
+            email=email.lower(),
+            order_id=order_id,
+            payment_id=payment_id,
+            amount=amount,
+            currency=currency,
+            plan=plan,
+            status=status
+        )
+        try:
+            db.add(payment)
+            db.commit()
+            db.refresh(payment)
+            logger.info(f"✅ Logged payment: {payment_id} for user {email}")
+            return payment.id
+        except Exception as e:
+            db.rollback()
+            logger.error(f"❌ Failed to log payment {payment_id}: {e}")
+            return None
+
+def get_user_payments(user_id):
+    with SessionLocal() as db:
+        payments = db.query(Payment).filter(Payment.user_id == user_id).order_by(Payment.created_at.desc()).all()
+        return [
+            {
+                "id": p.id,
+                "user_id": p.user_id,
+                "email": p.email,
+                "order_id": p.order_id,
+                "payment_id": p.payment_id,
+                "amount": p.amount,
+                "currency": p.currency,
+                "plan": p.plan,
+                "status": p.status,
+                "created_at": p.created_at
+            }
+            for p in payments
+        ]
 
 # Initialize database on module import
 init_db()

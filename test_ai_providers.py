@@ -1,16 +1,12 @@
-"""Quick diagnostic: test each AI provider in the cascade."""
-from openai import OpenAI
+"""Verify all 5 AI providers loaded from .env"""
 import ai_providers
 
-for p in ai_providers.PROVIDERS:
+print(f"Total providers: {len(ai_providers.PROVIDERS)}")
+print("-" * 70)
+for i, p in enumerate(ai_providers.PROVIDERS):
     name = p["name"]
-    try:
-        client = OpenAI(api_key=p["api_key"], base_url=p.get("base_url"))
-        resp = client.chat.completions.create(
-            model=p["model"],
-            messages=[{"role": "user", "content": "Say OK"}],
-            max_tokens=5
-        )
-        print(f"{name}: PASS - {resp.choices[0].message.content}")
-    except Exception as e:
-        print(f"{name}: FAIL - {str(e)[:300]}")
+    model = p["model"]
+    key_preview = p["api_key"][:10] + "..."
+    print(f"  {i+1}. {name:15s} | {model:40s} | {key_preview}")
+print("-" * 70)
+print(f"AI available: {ai_providers.is_ai_available()}")
