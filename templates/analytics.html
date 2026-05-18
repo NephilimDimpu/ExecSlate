@@ -17,14 +17,14 @@
         }
     </script>
     <style>
-        .analytics-page-tabs {
+        /* ── Page tabs ── */
+        .page-tabs {
             display: flex;
-            gap: 0;
             border-bottom: 2px solid var(--border, #e2e8f0);
-            margin: 0 0 2rem 0;
+            margin: 0 0 2rem;
             padding: 0 2rem;
         }
-        .analytics-page-tabs a {
+        .page-tabs a {
             padding: 0.75rem 1.5rem;
             font-size: 0.9rem;
             font-weight: 500;
@@ -34,15 +34,82 @@
             margin-bottom: -2px;
             transition: color 0.2s, border-color 0.2s;
         }
-        .analytics-page-tabs a.active {
-            color: var(--accent, #1e40af);
-            border-bottom-color: var(--accent, #1e40af);
+        .page-tabs a.active { color: var(--accent, #1e40af); border-bottom-color: var(--accent, #1e40af); }
+        .page-tabs a:hover:not(.active) { color: var(--text, #1e293b); }
+
+        /* ── Upload zone ── */
+        .upload-zone {
+            max-width: 560px;
+            margin: 3rem auto;
+            background: var(--card-bg, #fff);
+            border: 2px dashed var(--border, #cbd5e1);
+            border-radius: 16px;
+            padding: 3rem 2.5rem;
+            text-align: center;
+            transition: border-color 0.2s;
         }
-        .analytics-page-tabs a:hover:not(.active) {
+        .upload-zone:hover { border-color: var(--accent, #1e40af); }
+        .upload-zone h2 { font-size: 1.2rem; font-weight: 700; color: var(--text, #1e293b); margin-bottom: 0.5rem; }
+        .upload-zone p { font-size: 0.88rem; color: var(--text-muted, #64748b); margin-bottom: 1.5rem; }
+        .upload-form-row { display: flex; gap: 0.75rem; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; }
+        .upload-currency-select {
+            padding: 0.5rem 0.8rem;
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            background: var(--input-bg, #fff);
             color: var(--text, #1e293b);
         }
+        .upload-file-input {
+            font-size: 0.85rem;
+            color: var(--text-muted, #64748b);
+        }
+        .upload-submit-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent, #1e40af);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            margin-top: 0.5rem;
+        }
+        .upload-submit-btn:hover { opacity: 0.88; }
+        .upload-hint { font-size: 0.78rem; color: var(--text-muted, #94a3b8); margin-top: 0.75rem; }
 
-        /* Three-panel workspace */
+        /* ── Stat bar ── */
+        .analytics-stat-bar {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            padding: 0 2rem 1.25rem;
+        }
+        .stat-chip {
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 20px;
+            padding: 0.35rem 0.9rem;
+            font-size: 0.8rem;
+            color: var(--text-muted, #64748b);
+        }
+        .stat-chip strong { color: var(--text, #1e293b); }
+        .re-upload-btn {
+            margin-left: auto;
+            font-size: 0.78rem;
+            padding: 0.35rem 0.9rem;
+            border-radius: 20px;
+            border: 1px solid var(--border, #e2e8f0);
+            background: transparent;
+            color: var(--text-muted, #64748b);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .re-upload-btn:hover { border-color: var(--accent, #1e40af); color: var(--accent, #1e40af); }
+
+        /* ── Three-panel workspace ── */
         .analytics-workspace {
             display: grid;
             grid-template-columns: 260px 1fr 300px;
@@ -50,25 +117,21 @@
             padding: 0 2rem 2rem;
             align-items: start;
         }
-        @media (max-width: 1024px) {
-            .analytics-workspace {
-                grid-template-columns: 1fr 1fr;
-            }
+        @media (max-width: 1100px) {
+            .analytics-workspace { grid-template-columns: 1fr 1fr; }
             .analytics-insights-panel { grid-column: 1 / -1; }
         }
-        @media (max-width: 640px) {
-            .analytics-workspace { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 640px) { .analytics-workspace { grid-template-columns: 1fr; } }
 
-        /* KPI Panel */
-        .analytics-kpi-panel {
+        /* ── KPI panel ── */
+        .analytics-panel {
             background: var(--card-bg, #fff);
             border: 1px solid var(--border, #e2e8f0);
             border-radius: 12px;
             padding: 1.25rem;
         }
-        .analytics-panel-title {
-            font-size: 0.75rem;
+        .panel-title {
+            font-size: 0.72rem;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -79,83 +142,33 @@
             display: flex;
             align-items: flex-start;
             gap: 0.6rem;
-            padding: 0.65rem 0.5rem;
+            padding: 0.6rem 0.4rem;
             border-radius: 8px;
             cursor: pointer;
             transition: background 0.15s;
         }
         .kpi-item:hover { background: var(--hover-bg, #f8fafc); }
-        .kpi-item input[type="checkbox"] {
-            margin-top: 2px;
-            accent-color: var(--accent, #1e40af);
-            width: 15px;
-            height: 15px;
-            flex-shrink: 0;
-        }
-        .kpi-item-label { font-size: 0.85rem; font-weight: 500; color: var(--text, #1e293b); }
-        .kpi-item-value { font-size: 0.78rem; color: var(--text-muted, #64748b); }
-        .kpi-direction-up   { color: #16a34a; font-size: 0.72rem; }
-        .kpi-direction-down { color: #dc2626; font-size: 0.72rem; }
-        .kpi-panel-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border, #e2e8f0);
-        }
-        .btn-sm {
-            font-size: 0.78rem;
-            padding: 0.35rem 0.75rem;
-            border-radius: 6px;
-            border: 1px solid var(--border, #e2e8f0);
-            background: transparent;
-            color: var(--text-muted, #64748b);
-            cursor: pointer;
-            transition: background 0.15s;
-        }
+        .kpi-item input[type="checkbox"] { margin-top: 2px; accent-color: var(--accent, #1e40af); width: 14px; height: 14px; flex-shrink: 0; }
+        .kpi-label { font-size: 0.83rem; font-weight: 500; color: var(--text, #1e293b); }
+        .kpi-value { font-size: 0.76rem; color: var(--text-muted, #64748b); }
+        .kpi-up { color: #16a34a; font-size: 0.7rem; }
+        .kpi-down { color: #dc2626; font-size: 0.7rem; }
+        .panel-actions { display: flex; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border, #e2e8f0); }
+        .btn-sm { font-size: 0.76rem; padding: 0.3rem 0.7rem; border-radius: 6px; border: 1px solid var(--border, #e2e8f0); background: transparent; color: var(--text-muted, #64748b); cursor: pointer; }
         .btn-sm:hover { background: var(--hover-bg, #f8fafc); color: var(--text, #1e293b); }
 
-        /* Chart Panel */
-        .analytics-chart-panel {
-            background: var(--card-bg, #fff);
-            border: 1px solid var(--border, #e2e8f0);
-            border-radius: 12px;
-            padding: 1.25rem;
-        }
-        .chart-type-tabs {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1.25rem;
-        }
+        /* ── Chart panel ── */
+        .chart-type-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
         .chart-tab-btn {
-            font-size: 0.8rem;
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            border: 1px solid var(--border, #e2e8f0);
-            background: transparent;
-            color: var(--text-muted, #64748b);
-            cursor: pointer;
-            transition: all 0.15s;
+            font-size: 0.78rem; padding: 0.35rem 0.9rem; border-radius: 20px;
+            border: 1px solid var(--border, #e2e8f0); background: transparent;
+            color: var(--text-muted, #64748b); cursor: pointer; transition: all 0.15s;
         }
-        .chart-tab-btn.active {
-            background: var(--accent, #1e40af);
-            color: #fff;
-            border-color: var(--accent, #1e40af);
-        }
-        .chart-panel-img {
-            width: 100%;
-            border-radius: 8px;
-            display: none;
-        }
-        .chart-panel-img.visible { display: block; }
-        .chart-no-data {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: var(--text-muted, #64748b);
-            font-size: 0.9rem;
-        }
+        .chart-tab-btn.active { background: var(--accent, #1e40af); color: #fff; border-color: var(--accent, #1e40af); }
+        .chart-img { width: 100%; border-radius: 8px; display: none; }
+        .chart-img.visible { display: block; }
 
-        /* Insights Panel */
+        /* ── Insights panel ── */
         .analytics-insights-panel {
             background: var(--card-bg, #fff);
             border: 1px solid var(--border, #e2e8f0);
@@ -164,36 +177,18 @@
             max-height: 520px;
             overflow-y: auto;
         }
-        .insight-item {
-            display: flex;
-            gap: 0.65rem;
-            align-items: flex-start;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid var(--border, #e2e8f0);
-        }
+        .insight-item { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.7rem 0; border-bottom: 1px solid var(--border, #e2e8f0); }
         .insight-item:last-child { border-bottom: none; }
-        .insight-text {
-            font-size: 0.83rem;
-            line-height: 1.5;
-            color: var(--text, #1e293b);
-            flex: 1;
-        }
+        .insight-text { font-size: 0.83rem; line-height: 1.5; color: var(--text, #1e293b); flex: 1; }
         .pin-btn {
-            flex-shrink: 0;
-            background: none;
-            border: 1px solid var(--border, #e2e8f0);
-            border-radius: 6px;
-            padding: 0.3rem 0.55rem;
-            font-size: 0.75rem;
-            cursor: pointer;
-            color: var(--text-muted, #64748b);
-            transition: all 0.15s;
-            white-space: nowrap;
+            flex-shrink: 0; background: none; border: 1px solid var(--border, #e2e8f0);
+            border-radius: 6px; padding: 0.28rem 0.5rem; font-size: 0.73rem;
+            cursor: pointer; color: var(--text-muted, #64748b); transition: all 0.15s; white-space: nowrap;
         }
         .pin-btn:hover { background: #fef9c3; border-color: #fbbf24; color: #92400e; }
         .pin-btn.pinned { background: #fef9c3; border-color: #fbbf24; color: #92400e; }
 
-        /* Draft Board */
+        /* ── Draft board ── */
         .draft-board {
             background: var(--card-bg, #fff);
             border: 1px solid var(--border, #e2e8f0);
@@ -201,186 +196,66 @@
             padding: 1.5rem 2rem;
             margin: 0 2rem 2rem;
         }
-        .draft-board-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.25rem;
+        .draft-board-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+        .draft-board-title { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted, #64748b); }
+        .draft-count { font-size: 0.78rem; color: var(--text-muted, #64748b); background: var(--hover-bg, #f8fafc); padding: 0.18rem 0.6rem; border-radius: 12px; }
+        .pinned-list { list-style: none; padding: 0; margin: 0 0 1.25rem; min-height: 40px; }
+        .pinned-empty { font-size: 0.83rem; color: var(--text-muted, #64748b); padding: 0.5rem 0; font-style: italic; }
+        .pinned-item { display: flex; align-items: flex-start; gap: 0.55rem; padding: 0.45rem 0; font-size: 0.83rem; color: var(--text, #1e293b); border-bottom: 1px dashed var(--border, #e2e8f0); }
+        .pinned-item:last-child { border-bottom: none; }
+        .pinned-bullet { color: #fbbf24; flex-shrink: 0; }
+        .remove-pin { flex-shrink: 0; background: none; border: none; color: var(--text-muted, #94a3b8); cursor: pointer; font-size: 0.9rem; padding: 0; }
+        .remove-pin:hover { color: #dc2626; }
+        .notes-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted, #64748b); margin-bottom: 0.45rem; display: block; }
+        .notes-input {
+            width: 100%; min-height: 72px; padding: 0.6rem 0.85rem;
+            border: 1px solid var(--border, #e2e8f0); border-radius: 8px;
+            font-size: 0.83rem; font-family: inherit; resize: vertical;
+            background: var(--input-bg, #fff); color: var(--text, #1e293b); box-sizing: border-box;
         }
-        .draft-board-title {
-            font-size: 0.85rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--text-muted, #64748b);
-        }
-        .draft-board-count {
-            font-size: 0.8rem;
-            color: var(--text-muted, #64748b);
-            background: var(--hover-bg, #f8fafc);
-            padding: 0.2rem 0.6rem;
-            border-radius: 12px;
-        }
-        .pinned-list {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 1.25rem 0;
-            min-height: 48px;
-        }
-        .pinned-list-empty {
-            font-size: 0.85rem;
-            color: var(--text-muted, #64748b);
-            padding: 0.75rem 0;
-            font-style: italic;
-        }
-        .pinned-list-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.6rem;
-            padding: 0.5rem 0;
-            font-size: 0.85rem;
-            color: var(--text, #1e293b);
-            border-bottom: 1px dashed var(--border, #e2e8f0);
-        }
-        .pinned-list-item:last-child { border-bottom: none; }
-        .pinned-bullet { color: #fbbf24; font-size: 1rem; flex-shrink: 0; }
-        .remove-pin-btn {
-            flex-shrink: 0;
-            background: none;
-            border: none;
-            color: var(--text-muted, #94a3b8);
-            cursor: pointer;
-            font-size: 0.9rem;
-            padding: 0;
-            transition: color 0.15s;
-        }
-        .remove-pin-btn:hover { color: #dc2626; }
-        .draft-notes-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-muted, #64748b);
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-        .draft-notes-input {
-            width: 100%;
-            min-height: 80px;
-            padding: 0.65rem 0.9rem;
-            border: 1px solid var(--border, #e2e8f0);
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-family: inherit;
-            resize: vertical;
-            background: var(--input-bg, #fff);
-            color: var(--text, #1e293b);
-            box-sizing: border-box;
-        }
-        .draft-notes-input:focus {
-            outline: none;
-            border-color: var(--accent, #1e40af);
-        }
-        .draft-actions {
-            display: flex;
-            gap: 0.75rem;
-            margin-top: 1.25rem;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .notes-input:focus { outline: none; border-color: var(--accent, #1e40af); }
+        .draft-actions { display: flex; gap: 0.75rem; margin-top: 1.1rem; align-items: center; flex-wrap: wrap; }
         .draft-name-input {
-            border: 1px solid var(--border, #e2e8f0);
-            border-radius: 8px;
-            padding: 0.5rem 0.8rem;
-            font-size: 0.85rem;
-            font-family: inherit;
-            background: var(--input-bg, #fff);
-            color: var(--text, #1e293b);
-            width: 180px;
+            border: 1px solid var(--border, #e2e8f0); border-radius: 8px;
+            padding: 0.45rem 0.75rem; font-size: 0.83rem; font-family: inherit;
+            background: var(--input-bg, #fff); color: var(--text, #1e293b); width: 160px;
         }
         .draft-name-input:focus { outline: none; border-color: var(--accent, #1e40af); }
         .btn-save-draft {
-            padding: 0.55rem 1.25rem;
-            border-radius: 8px;
-            background: var(--card-bg, #fff);
-            border: 1.5px solid var(--accent, #1e40af);
-            color: var(--accent, #1e40af);
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
+            padding: 0.5rem 1.1rem; border-radius: 8px; background: transparent;
+            border: 1.5px solid var(--accent, #1e40af); color: var(--accent, #1e40af);
+            font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
         }
         .btn-save-draft:hover { background: var(--accent, #1e40af); color: #fff; }
         .btn-send-report {
-            padding: 0.55rem 1.5rem;
-            border-radius: 8px;
-            background: var(--accent, #1e40af);
-            border: none;
-            color: #fff;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            transition: opacity 0.15s;
+            padding: 0.5rem 1.3rem; border-radius: 8px; background: var(--accent, #1e40af);
+            border: none; color: #fff; font-size: 0.83rem; font-weight: 600;
+            cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;
         }
         .btn-send-report:hover { opacity: 0.88; }
-        .draft-saved-msg {
-            font-size: 0.8rem;
-            color: #16a34a;
-            display: none;
-        }
+        .saved-msg { font-size: 0.78rem; color: #16a34a; display: none; }
 
-        /* Saved drafts history */
-        .drafts-history {
-            margin: 0 2rem 2rem;
-        }
-        .drafts-history-title {
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--text-muted, #64748b);
-            margin-bottom: 0.75rem;
-        }
-        .draft-history-item {
-            background: var(--card-bg, #fff);
-            border: 1px solid var(--border, #e2e8f0);
-            border-radius: 8px;
-            padding: 0.85rem 1.1rem;
-            margin-bottom: 0.5rem;
-            cursor: pointer;
-            transition: border-color 0.15s;
-        }
-        .draft-history-item:hover { border-color: var(--accent, #1e40af); }
-        .draft-history-name { font-size: 0.85rem; font-weight: 600; color: var(--text, #1e293b); }
-        .draft-history-meta { font-size: 0.75rem; color: var(--text-muted, #64748b); margin-top: 0.2rem; }
+        /* ── Saved drafts history ── */
+        .drafts-history { margin: 0 2rem 2rem; }
+        .drafts-history-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted, #64748b); margin-bottom: 0.75rem; }
+        .draft-history-card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; padding: 0.8rem 1.1rem; margin-bottom: 0.5rem; cursor: pointer; transition: border-color 0.15s; }
+        .draft-history-card:hover { border-color: var(--accent, #1e40af); }
+        .draft-history-name { font-size: 0.83rem; font-weight: 600; color: var(--text, #1e293b); }
+        .draft-history-meta { font-size: 0.73rem; color: var(--text-muted, #64748b); margin-top: 0.2rem; }
 
-        /* No data state */
-        .analytics-no-data {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--text-muted, #64748b);
+        /* ── Re-upload modal ── */
+        .reupload-modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 1000; align-items: center; justify-content: center;
         }
-        .analytics-no-data h3 { color: var(--text, #1e293b); margin-bottom: 0.5rem; }
-
-        /* Stat summary bar */
-        .analytics-stat-bar {
-            display: flex;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-            padding: 1rem 2rem;
-            margin-bottom: 1.25rem;
+        .reupload-modal.open { display: flex; }
+        .reupload-modal-inner {
+            background: var(--card-bg, #fff); border-radius: 16px; padding: 2rem;
+            width: 90%; max-width: 460px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
         }
-        .stat-chip {
-            background: var(--card-bg, #fff);
-            border: 1px solid var(--border, #e2e8f0);
-            border-radius: 20px;
-            padding: 0.4rem 1rem;
-            font-size: 0.8rem;
-            color: var(--text-muted, #64748b);
-        }
-        .stat-chip strong { color: var(--text, #1e293b); }
+        .reupload-modal-title { font-size: 1.1rem; font-weight: 700; color: var(--text, #1e293b); margin-bottom: 0.4rem; }
+        .reupload-modal-sub { font-size: 0.83rem; color: var(--text-muted, #64748b); margin-bottom: 1.5rem; }
+        .modal-close { float: right; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-muted, #64748b); margin-top: -0.3rem; }
     </style>
 </head>
 
@@ -410,143 +285,129 @@
                 <h1>{{ project.client }}</h1>
                 <p class="report-period">Analytics Workspace{% if project.period %} — {{ project.period }}{% endif %}</p>
             </div>
-            <div style="display:flex;gap:0.5rem;align-items:center;">
-                {% if project.get('report_type') == 'ai' %}
-                <span class="report-type-badge ai">✨ AI Enhanced</span>
-                {% endif %}
-            </div>
         </div>
     </section>
 
     <!-- ================= PAGE TABS ================= -->
-    <div class="analytics-page-tabs">
+    <div class="page-tabs">
         <a href="/analytics/{{ project.id }}" class="active">Analytics</a>
         <a href="/report/{{ project.id }}">Report</a>
     </div>
 
-    {% if not project.get('generated') %}
-    <!-- ================= NO DATA STATE ================= -->
-    <div class="analytics-no-data">
-        <h3>No data uploaded yet</h3>
-        <p>Upload a CSV or Excel file in the Report tab to start exploring your analytics.</p>
-        <a href="/report/{{ project.id }}" class="btn-primary" style="display:inline-block;margin-top:1rem;">
-            Go to Report →
-        </a>
+    {% if not session %}
+    <!-- ================= UPLOAD ZONE (no session yet) ================= -->
+    <div class="upload-zone">
+        <h2>Upload Your Data</h2>
+        <p>Upload any CSV or Excel file — ExecSlate will detect your KPIs, generate charts, and produce analytics insights instantly.</p>
+
+        <form action="/analytics/{{ project.id }}/upload" method="post" enctype="multipart/form-data"
+              onsubmit="showLoading()">
+            <div class="upload-form-row">
+                <select name="currency" class="upload-currency-select">
+                    <option value="$">$ USD</option>
+                    <option value="₹">₹ INR</option>
+                    <option value="€">€ EUR</option>
+                    <option value="£">£ GBP</option>
+                </select>
+                <input type="file" name="file" accept=".csv,.xlsx,.xls" required class="upload-file-input">
+            </div>
+            <button type="submit" class="upload-submit-btn">Analyse Data →</button>
+        </form>
+
+        <p class="upload-hint">Accepts CSV and Excel files up to 5MB. No required column names — ExecSlate auto-detects everything.</p>
     </div>
 
     {% else %}
-    <!-- ================= STAT SUMMARY BAR ================= -->
+    <!-- ================= STAT BAR ================= -->
     <div class="analytics-stat-bar">
-        {% if project.row_count %}
-        <span class="stat-chip"><strong>{{ project.row_count }}</strong> rows</span>
+        <span class="stat-chip"><strong>{{ session.row_count }}</strong> rows</span>
+        <span class="stat-chip">Confidence <strong>{{ session.confidence }}%</strong></span>
+        <span class="stat-chip">Trend <strong>{{ session.trend }}</strong></span>
+        {% if session.growth_rate %}
+        <span class="stat-chip">Growth <strong>{{ "%.1f"|format(session.growth_rate) }}%</strong></span>
         {% endif %}
-        {% if project.confidence %}
-        <span class="stat-chip">Confidence <strong>{{ project.confidence }}%</strong></span>
-        {% endif %}
-        {% if project.trend %}
-        <span class="stat-chip">Trend <strong>{{ project.trend }}</strong></span>
-        {% endif %}
-        {% if project.growth_rate %}
-        <span class="stat-chip">Growth <strong>{{ "%.1f"|format(project.growth_rate) }}%</strong></span>
-        {% endif %}
-        {% if project.analysis_framework %}
-        <span class="stat-chip">Framework <strong>{{ project.analysis_framework | replace('_', ' ') | title }}</strong></span>
-        {% endif %}
+        <span class="stat-chip">Primary KPI <strong>{{ session.primary_col.replace('_', ' ').title() }}</strong></span>
+        <button class="re-upload-btn" onclick="openReupload()">Re-upload data ↑</button>
     </div>
 
     <!-- ================= THREE-PANEL WORKSPACE ================= -->
     <div class="analytics-workspace">
 
         <!-- LEFT: KPI Selector -->
-        <div class="analytics-kpi-panel">
-            <div class="analytics-panel-title">KPI Selector</div>
-
-            <div id="kpiList">
-                {% if project.kpi_metrics %}
-                    {% for key, metric in project.kpi_metrics.items() %}
-                    <label class="kpi-item">
-                        <input type="checkbox" class="kpi-checkbox" value="{{ key }}"
-                               data-label="{{ metric.label if metric.label else key }}"
-                               data-value="{{ metric.value if metric.value else '' }}"
-                               data-format="{{ metric.format if metric.format else 'number' }}"
-                               checked>
-                        <span>
-                            <div class="kpi-item-label">{{ metric.label if metric.label else key }}</div>
-                            {% if metric.value is not none %}
-                            <div class="kpi-item-value">
-                                {% if metric.format == 'currency' %}
-                                    {{ project.currency }}{{ "%.1f"|format(metric.value / 1000000) }}M
-                                {% elif metric.format == 'percent' %}
-                                    {{ "%.1f"|format(metric.value) }}%
-                                {% else %}
-                                    {{ "%.0f"|format(metric.value) }}
-                                {% endif %}
-                                {% if metric.direction == 'up_good' %}
-                                <span class="kpi-direction-up">↑ good</span>
-                                {% elif metric.direction == 'down_good' %}
-                                <span class="kpi-direction-down">↓ good</span>
-                                {% endif %}
-                            </div>
+        <div class="analytics-panel">
+            <div class="panel-title">KPI Selector</div>
+            {% if session.kpi_metrics %}
+                {% for key, metric in session.kpi_metrics.items() %}
+                <label class="kpi-item">
+                    <input type="checkbox" class="kpi-checkbox" value="{{ key }}"
+                           data-label="{{ metric.label }}"
+                           data-value="{{ metric.value }}"
+                           data-format="{{ metric.format }}"
+                           checked>
+                    <span>
+                        <div class="kpi-label">{{ metric.label }}</div>
+                        <div class="kpi-value">
+                            {% if metric.format == 'currency' %}
+                                {{ session.currency }}{{ "{:,.0f}".format(metric.value) }}
+                            {% elif metric.format == 'percent' %}
+                                {{ "%.1f"|format(metric.value) }}%
+                            {% else %}
+                                {{ "{:,.0f}".format(metric.value) }}
                             {% endif %}
-                        </span>
-                    </label>
-                    {% endfor %}
-                {% else %}
-                <p style="font-size:0.83rem;color:var(--text-muted,#64748b);">No KPIs detected in your data.</p>
-                {% endif %}
-            </div>
-
-            <div class="kpi-panel-actions">
-                <button class="btn-sm" onclick="selectAllKPIs()">Select All</button>
-                <button class="btn-sm" onclick="clearAllKPIs()">Clear</button>
+                            {% if metric.direction == 'up_good' %}
+                            <span class="kpi-up">↑ good</span>
+                            {% else %}
+                            <span class="kpi-down">↓ good</span>
+                            {% endif %}
+                        </div>
+                    </span>
+                </label>
+                {% endfor %}
+            {% else %}
+            <p style="font-size:0.82rem;color:var(--text-muted,#64748b);">No KPIs detected.</p>
+            {% endif %}
+            <div class="panel-actions">
+                <button class="btn-sm" onclick="selectAll()">Select All</button>
+                <button class="btn-sm" onclick="clearAll()">Clear</button>
             </div>
         </div>
 
-        <!-- CENTER: Chart Area -->
-        <div class="analytics-chart-panel">
-            <div class="analytics-panel-title">Data Visualisation</div>
+        <!-- CENTER: Chart area -->
+        <div class="analytics-panel">
+            <div class="panel-title">Data Visualisation</div>
             <div class="chart-type-tabs">
                 <button class="chart-tab-btn active" onclick="switchChart('trend', this)">Trend</button>
-                <button class="chart-tab-btn" onclick="switchChart('regional', this)">Regional</button>
+                {% if session.region_chart_b64 %}
+                <button class="chart-tab-btn" onclick="switchChart('region', this)">Regional</button>
+                {% endif %}
             </div>
 
-            {% if project.revenue_chart %}
-            <img id="chartTrend" class="chart-panel-img visible"
-                 src="data:image/png;base64,{{ project.revenue_chart }}" alt="Trend Chart">
+            {% if session.revenue_chart_b64 %}
+            <img id="chartTrend" class="chart-img visible"
+                 src="data:image/png;base64,{{ session.revenue_chart_b64 }}" alt="Trend chart">
             {% else %}
-            <img id="chartTrend" class="chart-panel-img visible" src="" alt="" style="display:none;">
+            <p style="font-size:0.83rem;color:var(--text-muted,#64748b);padding:2rem 0;text-align:center;">No trend chart available.</p>
             {% endif %}
 
-            {% if project.region_chart %}
-            <img id="chartRegional" class="chart-panel-img"
-                 src="data:image/png;base64,{{ project.region_chart }}" alt="Regional Chart">
-            {% else %}
-            <img id="chartRegional" class="chart-panel-img" src="" alt="" style="display:none;">
-            {% endif %}
-
-            {% if not project.revenue_chart and not project.region_chart %}
-            <div class="chart-no-data">No charts available for this project.</div>
+            {% if session.region_chart_b64 %}
+            <img id="chartRegion" class="chart-img"
+                 src="data:image/png;base64,{{ session.region_chart_b64 }}" alt="Regional chart">
             {% endif %}
         </div>
 
         <!-- RIGHT: AI Insights -->
         <div class="analytics-insights-panel">
-            <div class="analytics-panel-title">Observations</div>
-
-            {% if project.ai_insights %}
-                {% for insight in project.ai_insights %}
+            <div class="panel-title">Observations</div>
+            {% if session.ai_insights %}
+                {% for insight in session.ai_insights %}
                 <div class="insight-item">
-                    <span class="insight-text">{{ insight.insight if insight.insight else insight }}</span>
+                    <span class="insight-text">{{ insight }}</span>
                     <button class="pin-btn" onclick="pinInsight(this)"
-                            data-text="{{ (insight.insight if insight.insight else insight) | replace('"', '&quot;') }}">
-                        Pin
-                    </button>
+                            data-text="{{ insight | replace('"', '&quot;') }}">Pin</button>
                 </div>
                 {% endfor %}
             {% else %}
-            <p style="font-size:0.83rem;color:var(--text-muted,#64748b);padding:0.5rem 0;">
-                No AI insights available. Run an AI-enhanced analysis in the Report tab to generate observations.
-            </p>
+            <p style="font-size:0.82rem;color:var(--text-muted,#64748b);">No observations generated.</p>
             {% endif %}
         </div>
 
@@ -556,36 +417,34 @@
     <div class="draft-board">
         <div class="draft-board-header">
             <span class="draft-board-title">Draft Board</span>
-            <span class="draft-board-count" id="pinnedCount">0 pinned</span>
+            <span class="draft-count" id="pinnedCount">0 pinned</span>
         </div>
 
         <ul class="pinned-list" id="pinnedList">
-            <li class="pinned-list-empty" id="emptyPinnedMsg">
-                Pin observations from the right panel to build your draft.
-            </li>
+            <li class="pinned-empty" id="emptyMsg">Pin observations from the right panel to build your draft.</li>
         </ul>
 
-        <label class="draft-notes-label">Your notes</label>
-        <textarea class="draft-notes-input" id="draftNotes"
-                  placeholder="Add context, hypotheses, or follow-up questions for this draft..."></textarea>
+        <label class="notes-label">Your notes</label>
+        <textarea class="notes-input" id="draftNotes"
+                  placeholder="Add context, hypotheses, or follow-up questions..."></textarea>
 
         <div class="draft-actions">
             <input type="text" class="draft-name-input" id="draftName" placeholder="Draft name" value="Draft 1">
             <button class="btn-save-draft" onclick="saveDraft()">Save Draft</button>
             <a href="/report/{{ project.id }}" class="btn-send-report">Send to Report →</a>
-            <span class="draft-saved-msg" id="draftSavedMsg">Draft saved.</span>
+            <span class="saved-msg" id="savedMsg">Saved.</span>
         </div>
     </div>
 
-    <!-- ================= SAVED DRAFTS HISTORY ================= -->
+    <!-- ================= SAVED DRAFTS ================= -->
     {% if drafts %}
     <div class="drafts-history">
         <div class="drafts-history-title">Saved Drafts ({{ drafts | length }})</div>
         {% for draft in drafts %}
-        <div class="draft-history-item" onclick="loadDraft({{ draft | tojson }})">
+        <div class="draft-history-card" onclick="loadDraft({{ draft | tojson }})">
             <div class="draft-history-name">{{ draft.name }}</div>
             <div class="draft-history-meta">
-                {{ draft.selected_insights | length }} insight(s) pinned
+                {{ draft.selected_insights | length }} insight(s)
                 {% if draft.notes %} · {{ draft.notes[:60] }}{% if draft.notes | length > 60 %}…{% endif %}{% endif %}
                 {% if draft.created_at %} · {{ draft.created_at[:10] }}{% endif %}
             </div>
@@ -594,12 +453,43 @@
     </div>
     {% endif %}
 
-    {% endif %}{# end generated #}
+    <!-- ================= RE-UPLOAD MODAL ================= -->
+    <div class="reupload-modal" id="reuploadModal" onclick="if(event.target===this)closeReupload()">
+        <div class="reupload-modal-inner">
+            <button class="modal-close" onclick="closeReupload()">×</button>
+            <div class="reupload-modal-title">Upload New Data</div>
+            <div class="reupload-modal-sub">This will replace the current analytics session for this project.</div>
+            <form action="/analytics/{{ project.id }}/upload" method="post" enctype="multipart/form-data"
+                  onsubmit="showLoading()">
+                <div style="display:flex;gap:0.75rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
+                    <select name="currency" class="upload-currency-select">
+                        <option value="$">$ USD</option>
+                        <option value="₹">₹ INR</option>
+                        <option value="€">€ EUR</option>
+                        <option value="£">£ GBP</option>
+                    </select>
+                    <input type="file" name="file" accept=".csv,.xlsx,.xls" required style="font-size:0.85rem;">
+                </div>
+                <button type="submit" class="upload-submit-btn">Re-analyse →</button>
+            </form>
+        </div>
+    </div>
+
+    {% endif %}{# end session #}
 
     <!-- Theme toggle -->
     <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode">
         <span id="themeIcon">🌙</span>
     </button>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-title" id="loadingTitle">Analysing Data...</div>
+            <div class="loading-subtitle" id="loadingSubtitle">Detecting KPIs and generating insights</div>
+        </div>
+    </div>
 
     <script src="/static/theme.js"></script>
     <script src="/static/toast.js"></script>
@@ -608,28 +498,37 @@
         const PROJECT_ID = {{ project.id }};
         let pinnedInsights = [];
 
-        // ── Chart switching ──
+        function showLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
+            const steps = [
+                { t: "Detecting KPIs...", s: "Scanning numeric and categorical columns" },
+                { t: "Generating Charts...", s: "Building trend and segmentation visuals" },
+                { t: "Running AI Analysis...", s: "Producing consulting-grade observations" },
+                { t: "Saving Session...", s: "Storing your analytics workspace" },
+            ];
+            let i = 0;
+            setInterval(() => {
+                if (i < steps.length) {
+                    document.getElementById('loadingTitle').textContent = steps[i].t;
+                    document.getElementById('loadingSubtitle').textContent = steps[i].s;
+                    i++;
+                }
+            }, 1500);
+        }
+
         function switchChart(type, btn) {
             document.querySelectorAll('.chart-tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            document.getElementById('chartTrend').classList.remove('visible');
-            document.getElementById('chartRegional').classList.remove('visible');
-            if (type === 'trend') {
-                document.getElementById('chartTrend').classList.add('visible');
-            } else {
-                document.getElementById('chartRegional').classList.add('visible');
-            }
+            document.querySelectorAll('.chart-img').forEach(img => img.classList.remove('visible'));
+            const target = type === 'trend' ? 'chartTrend' : 'chartRegion';
+            const el = document.getElementById(target);
+            if (el) el.classList.add('visible');
         }
 
-        // ── KPI selection helpers ──
-        function selectAllKPIs() {
-            document.querySelectorAll('.kpi-checkbox').forEach(cb => cb.checked = true);
-        }
-        function clearAllKPIs() {
-            document.querySelectorAll('.kpi-checkbox').forEach(cb => cb.checked = false);
-        }
+        function selectAll() { document.querySelectorAll('.kpi-checkbox').forEach(cb => cb.checked = true); }
+        function clearAll()  { document.querySelectorAll('.kpi-checkbox').forEach(cb => cb.checked = false); }
 
-        // ── Pin / unpin insights ──
         function pinInsight(btn) {
             const text = btn.dataset.text;
             if (pinnedInsights.includes(text)) {
@@ -641,30 +540,24 @@
                 btn.classList.add('pinned');
                 btn.textContent = 'Pinned';
             }
-            renderPinnedList();
+            renderPinned();
         }
 
-        function renderPinnedList() {
+        function renderPinned() {
             const list = document.getElementById('pinnedList');
-            const empty = document.getElementById('emptyPinnedMsg');
-            const count = document.getElementById('pinnedCount');
-
-            count.textContent = pinnedInsights.length + ' pinned';
-
+            const emptyMsg = document.getElementById('emptyMsg');
+            document.getElementById('pinnedCount').textContent = pinnedInsights.length + ' pinned';
             if (pinnedInsights.length === 0) {
                 list.innerHTML = '';
-                list.appendChild(empty);
+                list.appendChild(emptyMsg);
                 return;
             }
             list.innerHTML = '';
             pinnedInsights.forEach((text, idx) => {
                 const li = document.createElement('li');
-                li.className = 'pinned-list-item';
-                li.innerHTML = `
-                    <span class="pinned-bullet">•</span>
-                    <span style="flex:1">${text}</span>
-                    <button class="remove-pin-btn" onclick="removePin(${idx})" title="Remove">×</button>
-                `;
+                li.className = 'pinned-item';
+                li.innerHTML = `<span class="pinned-bullet">•</span><span style="flex:1">${text}</span>
+                    <button class="remove-pin" onclick="removePin(${idx})">×</button>`;
                 list.appendChild(li);
             });
         }
@@ -672,83 +565,57 @@
         function removePin(idx) {
             const text = pinnedInsights[idx];
             pinnedInsights.splice(idx, 1);
-            // un-highlight the matching pin button
-            document.querySelectorAll('.pin-btn').forEach(btn => {
-                if (btn.dataset.text === text) {
-                    btn.classList.remove('pinned');
-                    btn.textContent = 'Pin';
-                }
+            document.querySelectorAll('.pin-btn').forEach(b => {
+                if (b.dataset.text === text) { b.classList.remove('pinned'); b.textContent = 'Pin'; }
             });
-            renderPinnedList();
+            renderPinned();
         }
 
-        // ── Save draft ──
         async function saveDraft() {
             const name = document.getElementById('draftName').value.trim() || 'Draft';
             const notes = document.getElementById('draftNotes').value.trim();
-            const selectedKPIs = Array.from(document.querySelectorAll('.kpi-checkbox:checked')).map(cb => cb.value);
-
+            const selectedKPIs = [...document.querySelectorAll('.kpi-checkbox:checked')].map(cb => cb.value);
             try {
                 const res = await fetch(`/api/analytics/${PROJECT_ID}/draft`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name,
-                        kpi_snapshot: selectedKPIs,
-                        selected_insights: pinnedInsights,
-                        notes,
-                    }),
+                    body: JSON.stringify({ name, kpi_snapshot: selectedKPIs, selected_insights: pinnedInsights, notes }),
                 });
                 const data = await res.json();
                 if (data.ok) {
-                    const msg = document.getElementById('draftSavedMsg');
+                    const msg = document.getElementById('savedMsg');
                     msg.style.display = 'inline';
-                    setTimeout(() => { msg.style.display = 'none'; }, 2500);
-                    if (typeof showToast === 'function') showToast('Draft saved successfully', 'success');
+                    setTimeout(() => msg.style.display = 'none', 2500);
+                    if (typeof showToast === 'function') showToast('Draft saved', 'success');
                 } else {
-                    if (typeof showToast === 'function') showToast(data.error || 'Could not save draft', 'error');
+                    if (typeof showToast === 'function') showToast(data.error || 'Could not save', 'error');
                 }
-            } catch (e) {
-                if (typeof showToast === 'function') showToast('Network error — draft not saved', 'error');
-            }
+            } catch { if (typeof showToast === 'function') showToast('Network error', 'error'); }
         }
 
-        // ── Load a saved draft back into the board ──
         function loadDraft(draft) {
-            // Restore pinned insights
             pinnedInsights = draft.selected_insights || [];
-            renderPinnedList();
-
-            // Re-tick pin buttons
+            renderPinned();
             document.querySelectorAll('.pin-btn').forEach(btn => {
-                if (pinnedInsights.includes(btn.dataset.text)) {
-                    btn.classList.add('pinned');
-                    btn.textContent = 'Pinned';
-                } else {
-                    btn.classList.remove('pinned');
-                    btn.textContent = 'Pin';
-                }
+                btn.classList.toggle('pinned', pinnedInsights.includes(btn.dataset.text));
+                btn.textContent = pinnedInsights.includes(btn.dataset.text) ? 'Pinned' : 'Pin';
             });
-
-            // Restore KPI checkboxes
             const kpis = draft.kpi_snapshot || [];
             document.querySelectorAll('.kpi-checkbox').forEach(cb => {
                 cb.checked = kpis.length === 0 || kpis.includes(cb.value);
             });
-
-            // Restore notes and name
             document.getElementById('draftNotes').value = draft.notes || '';
             document.getElementById('draftName').value = draft.name || 'Draft';
-
             if (typeof showToast === 'function') showToast('Draft loaded: ' + draft.name, 'info');
         }
 
-        // Hamburger nav (matches report.html pattern)
+        function openReupload() { document.getElementById('reuploadModal').classList.add('open'); }
+        function closeReupload() { document.getElementById('reuploadModal').classList.remove('open'); }
+
+        // Hamburger nav
         const hamburger = document.getElementById('navHamburger');
         const navRight = document.getElementById('navRight');
-        if (hamburger) {
-            hamburger.addEventListener('click', () => navRight.classList.toggle('open'));
-        }
+        if (hamburger) hamburger.addEventListener('click', () => navRight.classList.toggle('open'));
     </script>
 
 </body>

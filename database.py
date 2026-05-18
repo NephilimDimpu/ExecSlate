@@ -84,6 +84,24 @@ class Project(Base):
     error = Column(String)
     created_at = Column(DateTime, server_default=func.now())
 
+class AnalyticsSession(Base):
+    """Stores results of an independent analytics upload — separate from Report/Project data."""
+    __tablename__ = "analytics_sessions"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    currency = Column(String, default='$')
+    row_count = Column(Integer, default=0)
+    confidence = Column(Integer, default=0)
+    trend = Column(String)
+    growth_rate = Column(Float, default=0.0)
+    primary_col = Column(String)           # name of detected primary metric column
+    revenue_chart_b64 = Column(Text)       # base64 PNG trend chart
+    region_chart_b64 = Column(Text)        # base64 PNG regional chart
+    kpi_metrics = Column(Text)             # JSON
+    ai_insights = Column(Text)             # JSON list of insight strings
+    column_summary = Column(Text)          # JSON — {col: type}
+    created_at = Column(DateTime, server_default=func.now())
+
 class AnalyticsDraft(Base):
     __tablename__ = "analytics_drafts"
     id = Column(Integer, primary_key=True, index=True)
@@ -342,6 +360,55 @@ def get_user_payments(user_id):
             }
             for p in payments
         ]
+
+# ==================== ANALYTICS SESSION OPERATIONS ====================
+
+def create_analytics_session(project_id, currency, row_count, confidence, trend,
+                              growth_rate, primary_col, revenue_chart_b64,
+                              region_chart_b64, kpi_metrics, ai_insights, column_summary):
+    with SessionLocal() as db_session:
+        session = AnalyticsSession(
+            project_id=project_id,
+            currency=currency,
+            row_count=row_count,
+            confidence=confidence,
+            trend=trend,
+            growth_rate=growth_rate,
+            primary_col=primary_col,
+            revenue_chart_b64=revenue_chart_b64,
+            region_chart_b64=region_chart_b64,
+            kpi_metrics=json.dumps(kpi_metrics) if kpi_metrics else None,
+            ai_insights=json.dumps(ai_insights) if ai_insights else None,
+            column_summary=json.dumps(column_summary) if column_summary else None,
+        )
+        db_session.add(session)
+        db_session.commit()
+        db_session.refresh(session)
+        return session.id
+
+def get_latest_analytics_session(project_id):
+    with SessionLocal() as db_session:
+        s = db_session.query(AnalyticsSession).filter(
+            AnalyticsSession.project_id == project_id
+        ).order_by(AnalyticsSession.created_at.desc()).first()
+        if not s:
+            return None
+        return {
+            "id": s.id,
+            "project_id": s.project_id,
+            "currency": s.currency,
+            "row_count": s.row_count,
+            "confidence": s.confidence,
+            "trend": s.trend,
+            "growth_rate": s.growth_rate,
+            "primary_col": s.primary_col,
+            "revenue_chart_b64": s.revenue_chart_b64,
+            "region_chart_b64": s.region_chart_b64,
+            "kpi_metrics": json.loads(s.kpi_metrics) if s.kpi_metrics else {},
+            "ai_insights": json.loads(s.ai_insights) if s.ai_insights else [],
+            "column_summary": json.loads(s.column_summary) if s.column_summary else {},
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+        }
 
 # ==================== ANALYTICS DRAFT OPERATIONS ====================
 
