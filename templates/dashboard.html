@@ -306,30 +306,42 @@
 
             {% for project in projects %}
 
-            <a href="/report/{{ project.id }}" class="project-card elevate-on-hover">
+            <div class="project-card elevate-on-hover" style="cursor:default;">
 
-                <div class="project-title">{{ project.client }}</div>
+                <a href="/report/{{ project.id }}" style="text-decoration:none;color:inherit;">
+                    <div class="project-title">{{ project.client }}</div>
 
-                <div class="project-meta">
-                    <div>{{ project.period }}</div>
+                    <div class="project-meta">
+                        <div>{{ project.period }}</div>
 
-                    <div class="status-badge
+                        <div class="status-badge
 {% if project.generated %}status-ready{% else %}status-pending{% endif %}">
-                        {% if project.generated %}
-                        Analysis Ready
-                        {% else %}
-                        Awaiting Data
-                        {% endif %}
+                            {% if project.generated %}
+                            Analysis Ready
+                            {% else %}
+                            Awaiting Data
+                            {% endif %}
+                        </div>
+
                     </div>
+                </a>
 
+                <div class="project-footer" style="gap:0.5rem;">
+                    <div style="font-size:0.78rem;color:var(--text-muted,#64748b);">{{ project.uploads }} uploads</div>
+                    <div style="display:flex;gap:0.4rem;margin-left:auto;">
+                        {% if project.generated %}
+                        <a href="/analytics/{{ project.id }}"
+                           style="font-size:0.78rem;padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border,#e2e8f0);color:var(--text-muted,#64748b);text-decoration:none;transition:all 0.15s;"
+                           onmouseover="this.style.borderColor='#1e40af';this.style.color='#1e40af';"
+                           onmouseout="this.style.borderColor='';this.style.color='';">
+                            Analytics
+                        </a>
+                        {% endif %}
+                        <a href="/report/{{ project.id }}" class="project-open" style="font-size:0.78rem;">Report →</a>
+                    </div>
                 </div>
 
-                <div class="project-footer">
-                    <div>{{ project.uploads }} uploads</div>
-                    <div class="project-open">Open →</div>
-                </div>
-
-            </a>
+            </div>
 
             {% endfor %}
 

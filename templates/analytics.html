@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExecSlate — Analytics: {{ project.client }}</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/dark-theme.css">
+    <link rel="stylesheet" href="/static/loading.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+    <style>
+        .analytics-page-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--border, #e2e8f0);
+            margin: 0 0 2rem 0;
+            padding: 0 2rem;
+        }
+        .analytics-page-tabs a {
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted, #64748b);
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .analytics-page-tabs a.active {
+            color: var(--accent, #1e40af);
+            border-bottom-color: var(--accent, #1e40af);
+        }
+        .analytics-page-tabs a:hover:not(.active) {
+            color: var(--text, #1e293b);
+        }
+
+        /* Three-panel workspace */
+        .analytics-workspace {
+            display: grid;
+            grid-template-columns: 260px 1fr 300px;
+            gap: 1.25rem;
+            padding: 0 2rem 2rem;
+            align-items: start;
+        }
+        @media (max-width: 1024px) {
+            .analytics-workspace {
+                grid-template-columns: 1fr 1fr;
+            }
+            .analytics-insights-panel { grid-column: 1 / -1; }
+        }
+        @media (max-width: 640px) {
+            .analytics-workspace { grid-template-columns: 1fr; }
+        }
+
+        /* KPI Panel */
+        .analytics-kpi-panel {
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+        .analytics-panel-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted, #64748b);
+            margin-bottom: 1rem;
+        }
+        .kpi-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            padding: 0.65rem 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .kpi-item:hover { background: var(--hover-bg, #f8fafc); }
+        .kpi-item input[type="checkbox"] {
+            margin-top: 2px;
+            accent-color: var(--accent, #1e40af);
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+        }
+        .kpi-item-label { font-size: 0.85rem; font-weight: 500; color: var(--text, #1e293b); }
+        .kpi-item-value { font-size: 0.78rem; color: var(--text-muted, #64748b); }
+        .kpi-direction-up   { color: #16a34a; font-size: 0.72rem; }
+        .kpi-direction-down { color: #dc2626; font-size: 0.72rem; }
+        .kpi-panel-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border, #e2e8f0);
+        }
+        .btn-sm {
+            font-size: 0.78rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border, #e2e8f0);
+            background: transparent;
+            color: var(--text-muted, #64748b);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-sm:hover { background: var(--hover-bg, #f8fafc); color: var(--text, #1e293b); }
+
+        /* Chart Panel */
+        .analytics-chart-panel {
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+        .chart-type-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+        .chart-tab-btn {
+            font-size: 0.8rem;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--border, #e2e8f0);
+            background: transparent;
+            color: var(--text-muted, #64748b);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .chart-tab-btn.active {
+            background: var(--accent, #1e40af);
+            color: #fff;
+            border-color: var(--accent, #1e40af);
+        }
+        .chart-panel-img {
+            width: 100%;
+            border-radius: 8px;
+            display: none;
+        }
+        .chart-panel-img.visible { display: block; }
+        .chart-no-data {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted, #64748b);
+            font-size: 0.9rem;
+        }
+
+        /* Insights Panel */
+        .analytics-insights-panel {
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 12px;
+            padding: 1.25rem;
+            max-height: 520px;
+            overflow-y: auto;
+        }
+        .insight-item {
+            display: flex;
+            gap: 0.65rem;
+            align-items: flex-start;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border, #e2e8f0);
+        }
+        .insight-item:last-child { border-bottom: none; }
+        .insight-text {
+            font-size: 0.83rem;
+            line-height: 1.5;
+            color: var(--text, #1e293b);
+            flex: 1;
+        }
+        .pin-btn {
+            flex-shrink: 0;
+            background: none;
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 6px;
+            padding: 0.3rem 0.55rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            color: var(--text-muted, #64748b);
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .pin-btn:hover { background: #fef9c3; border-color: #fbbf24; color: #92400e; }
+        .pin-btn.pinned { background: #fef9c3; border-color: #fbbf24; color: #92400e; }
+
+        /* Draft Board */
+        .draft-board {
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin: 0 2rem 2rem;
+        }
+        .draft-board-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+        .draft-board-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted, #64748b);
+        }
+        .draft-board-count {
+            font-size: 0.8rem;
+            color: var(--text-muted, #64748b);
+            background: var(--hover-bg, #f8fafc);
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+        }
+        .pinned-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1.25rem 0;
+            min-height: 48px;
+        }
+        .pinned-list-empty {
+            font-size: 0.85rem;
+            color: var(--text-muted, #64748b);
+            padding: 0.75rem 0;
+            font-style: italic;
+        }
+        .pinned-list-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            padding: 0.5rem 0;
+            font-size: 0.85rem;
+            color: var(--text, #1e293b);
+            border-bottom: 1px dashed var(--border, #e2e8f0);
+        }
+        .pinned-list-item:last-child { border-bottom: none; }
+        .pinned-bullet { color: #fbbf24; font-size: 1rem; flex-shrink: 0; }
+        .remove-pin-btn {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            color: var(--text-muted, #94a3b8);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0;
+            transition: color 0.15s;
+        }
+        .remove-pin-btn:hover { color: #dc2626; }
+        .draft-notes-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted, #64748b);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .draft-notes-input {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.65rem 0.9rem;
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            resize: vertical;
+            background: var(--input-bg, #fff);
+            color: var(--text, #1e293b);
+            box-sizing: border-box;
+        }
+        .draft-notes-input:focus {
+            outline: none;
+            border-color: var(--accent, #1e40af);
+        }
+        .draft-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .draft-name-input {
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 8px;
+            padding: 0.5rem 0.8rem;
+            font-size: 0.85rem;
+            font-family: inherit;
+            background: var(--input-bg, #fff);
+            color: var(--text, #1e293b);
+            width: 180px;
+        }
+        .draft-name-input:focus { outline: none; border-color: var(--accent, #1e40af); }
+        .btn-save-draft {
+            padding: 0.55rem 1.25rem;
+            border-radius: 8px;
+            background: var(--card-bg, #fff);
+            border: 1.5px solid var(--accent, #1e40af);
+            color: var(--accent, #1e40af);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-save-draft:hover { background: var(--accent, #1e40af); color: #fff; }
+        .btn-send-report {
+            padding: 0.55rem 1.5rem;
+            border-radius: 8px;
+            background: var(--accent, #1e40af);
+            border: none;
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: opacity 0.15s;
+        }
+        .btn-send-report:hover { opacity: 0.88; }
+        .draft-saved-msg {
+            font-size: 0.8rem;
+            color: #16a34a;
+            display: none;
+        }
+
+        /* Saved drafts history */
+        .drafts-history {
+            margin: 0 2rem 2rem;
+        }
+        .drafts-history-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted, #64748b);
+            margin-bottom: 0.75rem;
+        }
+        .draft-history-item {
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 8px;
+            padding: 0.85rem 1.1rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .draft-history-item:hover { border-color: var(--accent, #1e40af); }
+        .draft-history-name { font-size: 0.85rem; font-weight: 600; color: var(--text, #1e293b); }
+        .draft-history-meta { font-size: 0.75rem; color: var(--text-muted, #64748b); margin-top: 0.2rem; }
+
+        /* No data state */
+        .analytics-no-data {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted, #64748b);
+        }
+        .analytics-no-data h3 { color: var(--text, #1e293b); margin-bottom: 0.5rem; }
+
+        /* Stat summary bar */
+        .analytics-stat-bar {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            padding: 1rem 2rem;
+            margin-bottom: 1.25rem;
+        }
+        .stat-chip {
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 20px;
+            padding: 0.4rem 1rem;
+            font-size: 0.8rem;
+            color: var(--text-muted, #64748b);
+        }
+        .stat-chip strong { color: var(--text, #1e293b); }
+    </style>
+</head>
+
+<body>
+
+    <!-- ================= NAVBAR ================= -->
+    <header class="nav">
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">ExecSlate</a>
+            <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            <div class="nav-right" id="navRight">
+                <span class="nav-user">{{ user.username if user.username else user.email }}</span>
+                <span class="plan-badge plan-{{ user.plan }}">{{ user.plan | upper }}</span>
+                <a href="/logout" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================= PAGE HEADER ================= -->
+    <section class="report-hero">
+        <div class="report-hero-inner">
+            <div>
+                <h1>{{ project.client }}</h1>
+                <p class="report-period">Analytics Workspace{% if project.period %} — {{ project.period }}{% endif %}</p>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+                {% if project.get('report_type') == 'ai' %}
+                <span class="report-type-badge ai">✨ AI Enhanced</span>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= PAGE TABS ================= -->
+    <div class="analytics-page-tabs">
+        <a href="/analytics/{{ project.id }}" class="active">Analytics</a>
+        <a href="/report/{{ project.id }}">Report</a>
+    </div>
+
+    {% if not project.get('generated') %}
+    <!-- ================= NO DATA STATE ================= -->
+    <div class="analytics-no-data">
+        <h3>No data uploaded yet</h3>
+        <p>Upload a CSV or Excel file in the Report tab to start exploring your analytics.</p>
+        <a href="/report/{{ project.id }}" class="btn-primary" style="display:inline-block;margin-top:1rem;">
+            Go to Report →
+        </a>
+    </div>
+
+    {% else %}
+    <!-- ================= STAT SUMMARY BAR ================= -->
+    <div class="analytics-stat-bar">
+        {% if project.row_count %}
+        <span class="stat-chip"><strong>{{ project.row_count }}</strong> rows</span>
+        {% endif %}
+        {% if project.confidence %}
+        <span class="stat-chip">Confidence <strong>{{ project.confidence }}%</strong></span>
+        {% endif %}
+        {% if project.trend %}
+        <span class="stat-chip">Trend <strong>{{ project.trend }}</strong></span>
+        {% endif %}
+        {% if project.growth_rate %}
+        <span class="stat-chip">Growth <strong>{{ "%.1f"|format(project.growth_rate) }}%</strong></span>
+        {% endif %}
+        {% if project.analysis_framework %}
+        <span class="stat-chip">Framework <strong>{{ project.analysis_framework | replace('_', ' ') | title }}</strong></span>
+        {% endif %}
+    </div>
+
+    <!-- ================= THREE-PANEL WORKSPACE ================= -->
+    <div class="analytics-workspace">
+
+        <!-- LEFT: KPI Selector -->
+        <div class="analytics-kpi-panel">
+            <div class="analytics-panel-title">KPI Selector</div>
+
+            <div id="kpiList">
+                {% if project.kpi_metrics %}
+                    {% for key, metric in project.kpi_metrics.items() %}
+                    <label class="kpi-item">
+                        <input type="checkbox" class="kpi-checkbox" value="{{ key }}"
+                               data-label="{{ metric.label if metric.label else key }}"
+                               data-value="{{ metric.value if metric.value else '' }}"
+                               data-format="{{ metric.format if metric.format else 'number' }}"
+                               checked>
+                        <span>
+                            <div class="kpi-item-label">{{ metric.label if metric.label else key }}</div>
+                            {% if metric.value is not none %}
+                            <div class="kpi-item-value">
+                                {% if metric.format == 'currency' %}
+                                    {{ project.currency }}{{ "%.1f"|format(metric.value / 1000000) }}M
+                                {% elif metric.format == 'percent' %}
+                                    {{ "%.1f"|format(metric.value) }}%
+                                {% else %}
+                                    {{ "%.0f"|format(metric.value) }}
+                                {% endif %}
+                                {% if metric.direction == 'up_good' %}
+                                <span class="kpi-direction-up">↑ good</span>
+                                {% elif metric.direction == 'down_good' %}
+                                <span class="kpi-direction-down">↓ good</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </span>
+                    </label>
+                    {% endfor %}
+                {% else %}
+                <p style="font-size:0.83rem;color:var(--text-muted,#64748b);">No KPIs detected in your data.</p>
+                {% endif %}
+            </div>
+
+            <div class="kpi-panel-actions">
+                <button class="btn-sm" onclick="selectAllKPIs()">Select All</button>
+                <button class="btn-sm" onclick="clearAllKPIs()">Clear</button>
+            </div>
+        </div>
+
+        <!-- CENTER: Chart Area -->
+        <div class="analytics-chart-panel">
+            <div class="analytics-panel-title">Data Visualisation</div>
+            <div class="chart-type-tabs">
+                <button class="chart-tab-btn active" onclick="switchChart('trend', this)">Trend</button>
+                <button class="chart-tab-btn" onclick="switchChart('regional', this)">Regional</button>
+            </div>
+
+            {% if project.revenue_chart %}
+            <img id="chartTrend" class="chart-panel-img visible"
+                 src="data:image/png;base64,{{ project.revenue_chart }}" alt="Trend Chart">
+            {% else %}
+            <img id="chartTrend" class="chart-panel-img visible" src="" alt="" style="display:none;">
+            {% endif %}
+
+            {% if project.region_chart %}
+            <img id="chartRegional" class="chart-panel-img"
+                 src="data:image/png;base64,{{ project.region_chart }}" alt="Regional Chart">
+            {% else %}
+            <img id="chartRegional" class="chart-panel-img" src="" alt="" style="display:none;">
+            {% endif %}
+
+            {% if not project.revenue_chart and not project.region_chart %}
+            <div class="chart-no-data">No charts available for this project.</div>
+            {% endif %}
+        </div>
+
+        <!-- RIGHT: AI Insights -->
+        <div class="analytics-insights-panel">
+            <div class="analytics-panel-title">Observations</div>
+
+            {% if project.ai_insights %}
+                {% for insight in project.ai_insights %}
+                <div class="insight-item">
+                    <span class="insight-text">{{ insight.insight if insight.insight else insight }}</span>
+                    <button class="pin-btn" onclick="pinInsight(this)"
+                            data-text="{{ (insight.insight if insight.insight else insight) | replace('"', '&quot;') }}">
+                        Pin
+                    </button>
+                </div>
+                {% endfor %}
+            {% else %}
+            <p style="font-size:0.83rem;color:var(--text-muted,#64748b);padding:0.5rem 0;">
+                No AI insights available. Run an AI-enhanced analysis in the Report tab to generate observations.
+            </p>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- ================= DRAFT BOARD ================= -->
+    <div class="draft-board">
+        <div class="draft-board-header">
+            <span class="draft-board-title">Draft Board</span>
+            <span class="draft-board-count" id="pinnedCount">0 pinned</span>
+        </div>
+
+        <ul class="pinned-list" id="pinnedList">
+            <li class="pinned-list-empty" id="emptyPinnedMsg">
+                Pin observations from the right panel to build your draft.
+            </li>
+        </ul>
+
+        <label class="draft-notes-label">Your notes</label>
+        <textarea class="draft-notes-input" id="draftNotes"
+                  placeholder="Add context, hypotheses, or follow-up questions for this draft..."></textarea>
+
+        <div class="draft-actions">
+            <input type="text" class="draft-name-input" id="draftName" placeholder="Draft name" value="Draft 1">
+            <button class="btn-save-draft" onclick="saveDraft()">Save Draft</button>
+            <a href="/report/{{ project.id }}" class="btn-send-report">Send to Report →</a>
+            <span class="draft-saved-msg" id="draftSavedMsg">Draft saved.</span>
+        </div>
+    </div>
+
+    <!-- ================= SAVED DRAFTS HISTORY ================= -->
+    {% if drafts %}
+    <div class="drafts-history">
+        <div class="drafts-history-title">Saved Drafts ({{ drafts | length }})</div>
+        {% for draft in drafts %}
+        <div class="draft-history-item" onclick="loadDraft({{ draft | tojson }})">
+            <div class="draft-history-name">{{ draft.name }}</div>
+            <div class="draft-history-meta">
+                {{ draft.selected_insights | length }} insight(s) pinned
+                {% if draft.notes %} · {{ draft.notes[:60] }}{% if draft.notes | length > 60 %}…{% endif %}{% endif %}
+                {% if draft.created_at %} · {{ draft.created_at[:10] }}{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% endif %}{# end generated #}
+
+    <!-- Theme toggle -->
+    <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode">
+        <span id="themeIcon">🌙</span>
+    </button>
+
+    <script src="/static/theme.js"></script>
+    <script src="/static/toast.js"></script>
+
+    <script>
+        const PROJECT_ID = {{ project.id }};
+        let pinnedInsights = [];
+
+        // ── Chart switching ──
+        function switchChart(type, btn) {
+            document.querySelectorAll('.chart-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('chartTrend').classList.remove('visible');
+            document.getElementById('chartRegional').classList.remove('visible');
+            if (type === 'trend') {
+                document.getElementById('chartTrend').classList.add('visible');
+            } else {
+                document.getElementById('chartRegional').classList.add('visible');
+            }
+        }
+
+        // ── KPI selection helpers ──
+        function selectAllKPIs() {
+            document.querySelectorAll('.kpi-checkbox').forEach(cb => cb.checked = true);
+        }
+        function clearAllKPIs() {
+            document.querySelectorAll('.kpi-checkbox').forEach(cb => cb.checked = false);
+        }
+
+        // ── Pin / unpin insights ──
+        function pinInsight(btn) {
+            const text = btn.dataset.text;
+            if (pinnedInsights.includes(text)) {
+                pinnedInsights = pinnedInsights.filter(t => t !== text);
+                btn.classList.remove('pinned');
+                btn.textContent = 'Pin';
+            } else {
+                pinnedInsights.push(text);
+                btn.classList.add('pinned');
+                btn.textContent = 'Pinned';
+            }
+            renderPinnedList();
+        }
+
+        function renderPinnedList() {
+            const list = document.getElementById('pinnedList');
+            const empty = document.getElementById('emptyPinnedMsg');
+            const count = document.getElementById('pinnedCount');
+
+            count.textContent = pinnedInsights.length + ' pinned';
+
+            if (pinnedInsights.length === 0) {
+                list.innerHTML = '';
+                list.appendChild(empty);
+                return;
+            }
+            list.innerHTML = '';
+            pinnedInsights.forEach((text, idx) => {
+                const li = document.createElement('li');
+                li.className = 'pinned-list-item';
+                li.innerHTML = `
+                    <span class="pinned-bullet">•</span>
+                    <span style="flex:1">${text}</span>
+                    <button class="remove-pin-btn" onclick="removePin(${idx})" title="Remove">×</button>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function removePin(idx) {
+            const text = pinnedInsights[idx];
+            pinnedInsights.splice(idx, 1);
+            // un-highlight the matching pin button
+            document.querySelectorAll('.pin-btn').forEach(btn => {
+                if (btn.dataset.text === text) {
+                    btn.classList.remove('pinned');
+                    btn.textContent = 'Pin';
+                }
+            });
+            renderPinnedList();
+        }
+
+        // ── Save draft ──
+        async function saveDraft() {
+            const name = document.getElementById('draftName').value.trim() || 'Draft';
+            const notes = document.getElementById('draftNotes').value.trim();
+            const selectedKPIs = Array.from(document.querySelectorAll('.kpi-checkbox:checked')).map(cb => cb.value);
+
+            try {
+                const res = await fetch(`/api/analytics/${PROJECT_ID}/draft`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        kpi_snapshot: selectedKPIs,
+                        selected_insights: pinnedInsights,
+                        notes,
+                    }),
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    const msg = document.getElementById('draftSavedMsg');
+                    msg.style.display = 'inline';
+                    setTimeout(() => { msg.style.display = 'none'; }, 2500);
+                    if (typeof showToast === 'function') showToast('Draft saved successfully', 'success');
+                } else {
+                    if (typeof showToast === 'function') showToast(data.error || 'Could not save draft', 'error');
+                }
+            } catch (e) {
+                if (typeof showToast === 'function') showToast('Network error — draft not saved', 'error');
+            }
+        }
+
+        // ── Load a saved draft back into the board ──
+        function loadDraft(draft) {
+            // Restore pinned insights
+            pinnedInsights = draft.selected_insights || [];
+            renderPinnedList();
+
+            // Re-tick pin buttons
+            document.querySelectorAll('.pin-btn').forEach(btn => {
+                if (pinnedInsights.includes(btn.dataset.text)) {
+                    btn.classList.add('pinned');
+                    btn.textContent = 'Pinned';
+                } else {
+                    btn.classList.remove('pinned');
+                    btn.textContent = 'Pin';
+                }
+            });
+
+            // Restore KPI checkboxes
+            const kpis = draft.kpi_snapshot || [];
+            document.querySelectorAll('.kpi-checkbox').forEach(cb => {
+                cb.checked = kpis.length === 0 || kpis.includes(cb.value);
+            });
+
+            // Restore notes and name
+            document.getElementById('draftNotes').value = draft.notes || '';
+            document.getElementById('draftName').value = draft.name || 'Draft';
+
+            if (typeof showToast === 'function') showToast('Draft loaded: ' + draft.name, 'info');
+        }
+
+        // Hamburger nav (matches report.html pattern)
+        const hamburger = document.getElementById('navHamburger');
+        const navRight = document.getElementById('navRight');
+        if (hamburger) {
+            hamburger.addEventListener('click', () => navRight.classList.toggle('open'));
+        }
+    </script>
+
+</body>
+</html>

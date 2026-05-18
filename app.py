@@ -1245,6 +1245,7 @@ from routes import exports as export_routes
 from routes import admin as admin_routes
 from routes import payments as payment_routes
 from routes import agent as agent_routes
+from routes import analytics as analytics_routes
 
 # Wire shared state into route modules
 _this = sys.modules[__name__]
@@ -1253,6 +1254,7 @@ export_routes.setup(_this)
 admin_routes.setup(_this)
 payment_routes.setup(_this)
 agent_routes.setup(_this)
+analytics_routes.setup(_this)
 
 # Include routers
 app.include_router(auth_routes.router)
@@ -1260,8 +1262,9 @@ app.include_router(export_routes.router)
 app.include_router(admin_routes.router)
 app.include_router(payment_routes.router)
 app.include_router(agent_routes.router)
+app.include_router(analytics_routes.router)
 
-logger.info("✅ Modular routes loaded: auth, exports, admin, payments, agent")
+logger.info("✅ Modular routes loaded: auth, exports, admin, payments, agent, analytics")
 
 # ==================== MAIN ROUTES ====================
 
