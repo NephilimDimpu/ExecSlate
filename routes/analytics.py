@@ -12,7 +12,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from fastapi import APIRouter, Request, Depends, HTTPException, UploadFile, File, Form
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -667,3 +667,41 @@ Base every insight only on the data shape described above. Return exactly 6 bull
             logger.error(f"send-to-report failed: {e}")
 
         return RedirectResponse(f"/report/{pid}", status_code=303)
+
+    # ── Export the Analytics workspace as a PDF brief ────────────────────────
+
+    @router.get("/analytics/{pid}/export/pdf")
+    def export_analytics_pdf_route(pid: int, request: Request, user=Depends(require_user)):
+        """Generate a PDF brief of the current analytics session."""
+        project = _find_project(pid, user)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        session = _latest_session(pid, user)
+        if not session:
+            return _flash_error(request, pid, "Upload data first — there is no analytics session to export yet.")
+
+        # Pull the most recent saved draft (notes + pinned) if any
+        drafts = _list_drafts(pid, user)
+        latest_draft = drafts[0] if drafts else None
+
+        # Import here so the heavy reportlab import is paid only on export
+        from exports.analytics_export import export_analytics_pdf
+
+        import re
+        safe_client = re.sub(r"[^A-Za-z0-9_-]+", "_", str(project.get("client") or "report")).strip("_") or "report"
+        from datetime import datetime as _dt
+        ts = _dt.now().strftime("%Y%m%d_%H%M%S")
+        out_path = app_module.EXPORT_DIR / f"{safe_client}_analytics_{ts}.pdf"
+
+        try:
+            export_analytics_pdf(project, session, latest_draft, out_path)
+        except Exception as e:
+            logger.error(f"Analytics PDF export failed: {e}")
+            raise HTTPException(status_code=500, detail=f"Could not generate PDF: {e}")
+
+        return FileResponse(
+            path=str(out_path),
+            filename=f"{safe_client}_analytics.pdf",
+            media_type="application/pdf",
+        )
