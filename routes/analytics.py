@@ -148,6 +148,10 @@ class DraftPayload(BaseModel):
     notes: Optional[str] = ""
 
 
+class InsightsPayload(BaseModel):
+    insights: List[str]
+
+
 # ── Route setup ────────────────────────────────────────────────────────────────
 
 def setup(app_module):
@@ -208,6 +212,27 @@ def setup(app_module):
         upload page so the user can fix and retry without losing the page."""
         request.session["analytics_error"] = msg
         return RedirectResponse(f"/analytics/{pid}", status_code=303)
+
+    def _update_session_insights(pid, user, insights):
+        """Persist edited insight list, dual-storage aware."""
+        if _is_db_user(user):
+            return db.update_analytics_session_insights(pid, insights)
+        sess = app_module.analytics_sessions_mem.get(pid)
+        if not sess:
+            return False
+        sess["ai_insights"] = list(insights or [])
+        return True
+
+    def _update_project_working_theory(pid, user, text):
+        """Append/replace project working_theory, dual-storage aware."""
+        if _is_db_user(user):
+            db.update_project(pid, user["id"], working_theory=text)
+            return True
+        for p in app_module.projects:
+            if p.get("id") == pid and p.get("user_email") == user["email"]:
+                p["working_theory"] = text
+                return True
+        return False
 
     # ── Analytics workspace page ──────────────────────────────────────────────
 
@@ -561,3 +586,84 @@ Base every insight only on the data shape described above. Return exactly 6 bull
             raise HTTPException(status_code=404, detail="Project not found")
 
         return {"drafts": _list_drafts(pid, user)}
+
+    # ── Edit AI insights inline ──────────────────────────────────────────────
+
+    @router.post("/api/analytics/{pid}/insights")
+    async def update_insights(pid: int, payload: InsightsPayload, request: Request):
+        """Persist edited insight text back to the latest analytics session."""
+        user = request.session.get("user")
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        if is_demo_user(user):
+            return JSONResponse({"ok": False, "error": "Demo accounts cannot edit insights"}, status_code=403)
+
+        project = _find_project(pid, user)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        # Sanitise: strip whitespace, drop empties, cap each item length
+        cleaned = [str(s).strip()[:600] for s in (payload.insights or []) if str(s).strip()]
+        try:
+            ok = _update_session_insights(pid, user, cleaned)
+            if not ok:
+                return JSONResponse({"ok": False, "error": "No active analytics session to edit. Upload data first."}, status_code=400)
+            return {"ok": True, "count": len(cleaned)}
+        except Exception as e:
+            logger.error(f"Failed to update insights: {e}")
+            raise HTTPException(status_code=500, detail="Could not save edits")
+
+    # ── Send analytics work to the Report tab ────────────────────────────────
+
+    @router.post("/analytics/{pid}/send-to-report")
+    async def send_to_report(
+        pid: int,
+        request: Request,
+        notes: str = Form(""),
+        pinned: str = Form(""),  # newline-joined pinned insights
+    ):
+        """Carry the current analytics narrative into the Report tab's working
+        theory, then redirect to the Report. Non-destructive: prepends to any
+        existing working_theory with a clear timestamped header."""
+        user = request.session.get("user")
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        if is_demo_user(user):
+            return _flash_error(request, pid, "Demo accounts cannot send analytics to the Report. Please register.")
+
+        project = _find_project(pid, user)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        # Build a clean carry-over block from the latest session + this form data
+        session = _latest_session(pid, user) or {}
+        insights = session.get("ai_insights") or []
+        primary = session.get("primary_col") or ""
+        trend_lbl = session.get("trend") or ""
+
+        from datetime import datetime
+        header = f"--- Analytics carry-over ({datetime.now().strftime('%Y-%m-%d %H:%M')}) ---"
+        parts = [header]
+        if primary or trend_lbl:
+            parts.append(f"Primary metric: {primary} | Pattern: {trend_lbl}")
+        if insights:
+            parts.append("\nKey observations:")
+            parts.extend(f"• {ins}" for ins in insights)
+        pinned_lines = [p.strip() for p in (pinned or "").split("\n") if p.strip()]
+        if pinned_lines:
+            parts.append("\nPinned for the report:")
+            parts.extend(f"• {p}" for p in pinned_lines)
+        if notes and notes.strip():
+            parts.append(f"\nAnalyst notes:\n{notes.strip()}")
+        carry_block = "\n".join(parts)
+
+        # Prepend to existing working_theory (preserve any prior context)
+        existing = (project.get("working_theory") or "").strip()
+        new_theory = carry_block if not existing else f"{carry_block}\n\n{existing}"
+
+        try:
+            _update_project_working_theory(pid, user, new_theory)
+        except Exception as e:
+            logger.error(f"send-to-report failed: {e}")
+
+        return RedirectResponse(f"/report/{pid}", status_code=303)

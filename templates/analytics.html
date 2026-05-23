@@ -222,9 +222,21 @@
             max-height: 520px;
             overflow-y: auto;
         }
-        .insight-item { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.7rem 0; border-bottom: 1px solid var(--border, #e2e8f0); }
+        .insight-item { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.7rem 0; border-bottom: 1px solid var(--border, #e2e8f0); position: relative; }
         .insight-item:last-child { border-bottom: none; }
-        .insight-text { font-size: 0.83rem; line-height: 1.5; color: var(--text, #1e293b); flex: 1; }
+        .insight-text {
+            font-size: 0.83rem; line-height: 1.5; color: var(--text, #1e293b); flex: 1;
+            padding: 4px 6px; border-radius: 6px; cursor: text;
+            outline: none; border: 1px solid transparent; transition: border-color 0.15s, background 0.15s;
+        }
+        .insight-text:hover { border-color: var(--border, #e2e8f0); background: rgba(0,0,0,0.015); }
+        .insight-text:focus { border-color: var(--accent, #1e40af); background: rgba(30,64,175,0.04); }
+        .insight-save-mark {
+            position: absolute; right: 4px; top: 4px;
+            font-size: 0.68rem; color: #16a34a; opacity: 0; transition: opacity 0.2s;
+            pointer-events: none;
+        }
+        .insight-save-mark.show { opacity: 1; }
         .pin-btn {
             flex-shrink: 0; background: none; border: 1px solid var(--border, #e2e8f0);
             border-radius: 6px; padding: 0.28rem 0.5rem; font-size: 0.73rem;
@@ -457,12 +469,17 @@
             <div class="panel-title">Observations</div>
             {% if session.ai_insights %}
                 {% for insight in session.ai_insights %}
-                <div class="insight-item">
-                    <span class="insight-text">{{ insight }}</span>
+                <div class="insight-item" data-index="{{ loop.index0 }}">
+                    <span class="insight-text" contenteditable="true" spellcheck="true"
+                          onblur="saveInsight(this)" onkeydown="insightKeydown(event, this)">{{ insight }}</span>
+                    <span class="insight-save-mark">✓ saved</span>
                     <button class="pin-btn" onclick="pinInsight(this)"
                             data-text="{{ insight | replace('"', '&quot;') }}">Pin</button>
                 </div>
                 {% endfor %}
+                <p style="font-size:0.72rem;color:var(--text-muted,#94a3b8);margin-top:0.5rem;">
+                    Click any observation to edit. Press Enter to save, Esc to cancel.
+                </p>
             {% else %}
             <p style="font-size:0.82rem;color:var(--text-muted,#64748b);">No observations generated.</p>
             {% endif %}
@@ -488,7 +505,12 @@
         <div class="draft-actions">
             <input type="text" class="draft-name-input" id="draftName" placeholder="Draft name" value="Draft 1">
             <button class="btn-save-draft" onclick="saveDraft()">Save Draft</button>
-            <a href="/report/{{ project.id }}" class="btn-send-report">Send to Report →</a>
+            <form action="/analytics/{{ project.id }}/send-to-report" method="post" style="display:inline;"
+                  onsubmit="return prepareSendToReport(this)">
+                <input type="hidden" name="notes" id="sendNotes" value="">
+                <input type="hidden" name="pinned" id="sendPinned" value="">
+                <button type="submit" class="btn-send-report">Send to Report →</button>
+            </form>
             <span class="saved-msg" id="savedMsg">Saved.</span>
         </div>
     </div>
@@ -650,6 +672,83 @@
 
         function selectAll() { document.querySelectorAll('.kpi-checkbox').forEach(cb => cb.checked = true); }
         function clearAll()  { document.querySelectorAll('.kpi-checkbox').forEach(cb => cb.checked = false); }
+
+        // ── Editable insights ──
+        // Cache original text per item so Esc can restore and we can detect changes.
+        document.querySelectorAll('.insight-item').forEach(item => {
+            const span = item.querySelector('.insight-text');
+            if (span) span.dataset.original = span.textContent.trim();
+        });
+
+        function insightKeydown(e, el) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                el.blur();  // triggers save
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                el.textContent = el.dataset.original || '';
+                el.blur();
+            }
+        }
+
+        async function saveInsight(el) {
+            const item = el.closest('.insight-item');
+            const idx = parseInt(item.dataset.index, 10);
+            const newText = el.textContent.trim();
+            const oldText = el.dataset.original || '';
+            if (newText === oldText) return;  // no change → no network call
+            if (!newText) {
+                // empty edit reverts to original to avoid losing content
+                el.textContent = oldText;
+                return;
+            }
+
+            // Gather the full current list of insights from the DOM in order
+            const items = Array.from(document.querySelectorAll('.insight-item'));
+            const list = items.map(i => i.querySelector('.insight-text').textContent.trim());
+
+            try {
+                const res = await fetch(`/api/analytics/${PROJECT_ID}/insights`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({insights: list}),
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    el.textContent = oldText;
+                    if (typeof showToast === 'function') showToast(data.error || 'Could not save edit', 'error');
+                    return;
+                }
+                el.dataset.original = newText;
+                // If this insight was pinned, update the pinned text + button data
+                const pinBtn = item.querySelector('.pin-btn');
+                if (pinBtn && pinBtn.classList.contains('pinned')) {
+                    const i = pinnedInsights.indexOf(oldText);
+                    if (i !== -1) pinnedInsights[i] = newText;
+                    pinBtn.dataset.text = newText;
+                    renderPinned();
+                } else if (pinBtn) {
+                    pinBtn.dataset.text = newText;
+                }
+                // Flash "saved"
+                const mark = item.querySelector('.insight-save-mark');
+                if (mark) {
+                    mark.classList.add('show');
+                    setTimeout(() => mark.classList.remove('show'), 1500);
+                }
+            } catch (e) {
+                el.textContent = oldText;
+                if (typeof showToast === 'function') showToast('Network error — edit not saved', 'error');
+            }
+        }
+
+        // ── Send to Report: package notes + pinned for carry-over ──
+        function prepareSendToReport(form) {
+            const notes = document.getElementById('draftNotes')?.value || '';
+            form.querySelector('#sendNotes').value = notes;
+            form.querySelector('#sendPinned').value = (pinnedInsights || []).join('\n');
+            return true;
+        }
 
         function pinInsight(btn) {
             const text = btn.dataset.text;

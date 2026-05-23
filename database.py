@@ -386,6 +386,19 @@ def create_analytics_session(project_id, currency, row_count, confidence, trend,
         db_session.refresh(session)
         return session.id
 
+def update_analytics_session_insights(project_id, insights):
+    """Replace the ai_insights list on the most recent session for this project.
+    Returns True on success, False if no session was found."""
+    with SessionLocal() as db_session:
+        s = db_session.query(AnalyticsSession).filter(
+            AnalyticsSession.project_id == project_id
+        ).order_by(AnalyticsSession.created_at.desc()).first()
+        if not s:
+            return False
+        s.ai_insights = json.dumps(insights) if insights is not None else None
+        db_session.commit()
+        return True
+
 def get_latest_analytics_session(project_id):
     with SessionLocal() as db_session:
         s = db_session.query(AnalyticsSession).filter(
