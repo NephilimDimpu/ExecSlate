@@ -1,0 +1,12 @@
+segment,customer_count,avg_order_value,total_revenue,retention_rate
+Champions,234,485,1135890,92.5
+Loyal Customers,512,234,1198080,87.3
+Potential Loyalists,389,182,708180,71.2
+New Customers,667,89,594130,65.4
+Promising,425,142,603500,68.9
+Need Attention,318,156,495640,55.3
+About to Sleep,275,98,269500,38.4
+At Risk,298,125,372500,42.1
+Cant Lose Them,142,320,454400,38.7
+Hibernating,856,42,359520,12.8
+Lost,1240,18,223200,3.2

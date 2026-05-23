@@ -1,0 +1,10 @@
+month,product_line,revenue,units,gross_margin
+2025-01,Enterprise,425000,42,38.5
+2025-01,Mid-Market,218000,86,42.1
+2025-01,SMB,142000,284,45.8
+2025-02,Enterprise,448000,45,39.0
+2025-02,Mid-Market,231000,92,42.6
+2025-02,SMB,156000,312,46.2
+2025-03,Enterprise,472000,48,39.4
+2025-03,Mid-Market,245000,98,43.0
+2025-03,SMB,168000,336,46.5
