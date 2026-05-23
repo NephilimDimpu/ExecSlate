@@ -237,6 +237,13 @@
             pointer-events: none;
         }
         .insight-save-mark.show { opacity: 1; }
+        .insight-pencil {
+            flex-shrink: 0; font-size: 0.78rem;
+            color: var(--text-muted, #94a3b8); opacity: 0; transition: opacity 0.15s;
+            padding-top: 6px;
+        }
+        .insight-item:hover .insight-pencil,
+        .insight-item:focus-within .insight-pencil { opacity: 1; }
         .pin-btn {
             flex-shrink: 0; background: none; border: 1px solid var(--border, #e2e8f0);
             border-radius: 6px; padding: 0.28rem 0.5rem; font-size: 0.73rem;
@@ -396,6 +403,9 @@
         <span class="stat-chip">Growth <strong>{{ "%.1f"|format(session.growth_rate) }}%</strong></span>
         {% endif %}
         <span class="stat-chip">Primary KPI <strong>{{ session.primary_col.replace('_', ' ').title() }}</strong></span>
+        <a href="/analytics/{{ project.id }}/export/pdf" class="re-upload-btn"
+           style="text-decoration:none;color:var(--accent,#1e40af);border-color:var(--accent,#1e40af);"
+           title="Download this analytics view as PDF">Export PDF ↓</a>
         <button class="re-upload-btn" onclick="openReupload()">Re-upload data ↑</button>
     </div>
 
@@ -466,20 +476,24 @@
 
         <!-- RIGHT: AI Insights -->
         <div class="analytics-insights-panel">
-            <div class="panel-title">Observations</div>
+            <div class="panel-title">Observations
+                <span style="display:block;font-size:0.7rem;font-weight:500;color:var(--text-muted,#64748b);
+                             text-transform:none;letter-spacing:0;margin-top:0.25rem;">
+                    ✎ Click any line to edit · Pin to add to your draft
+                </span>
+            </div>
             {% if session.ai_insights %}
                 {% for insight in session.ai_insights %}
                 <div class="insight-item" data-index="{{ loop.index0 }}">
+                    <span class="insight-pencil" aria-hidden="true">✎</span>
                     <span class="insight-text" contenteditable="true" spellcheck="true"
-                          onblur="saveInsight(this)" onkeydown="insightKeydown(event, this)">{{ insight }}</span>
+                          onblur="saveInsight(this)" onkeydown="insightKeydown(event, this)"
+                          title="Click to edit · Enter to save · Esc to cancel">{{ insight }}</span>
                     <span class="insight-save-mark">✓ saved</span>
                     <button class="pin-btn" onclick="pinInsight(this)"
                             data-text="{{ insight | replace('"', '&quot;') }}">Pin</button>
                 </div>
                 {% endfor %}
-                <p style="font-size:0.72rem;color:var(--text-muted,#94a3b8);margin-top:0.5rem;">
-                    Click any observation to edit. Press Enter to save, Esc to cancel.
-                </p>
             {% else %}
             <p style="font-size:0.82rem;color:var(--text-muted,#64748b);">No observations generated.</p>
             {% endif %}

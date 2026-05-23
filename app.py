@@ -496,13 +496,48 @@ def process_dataframe(project, df):
     project["avg_revenue"] = float(revenue_data.mean())
     project["median_revenue"] = float(revenue_data.median())
     project["std_revenue"] = float(revenue_data.std())
-    
-    # Growth analysis
+
+    # ── Time-aware first/last helper ──
+    # Naive iloc[0] vs iloc[-1] gives the wrong direction when a CSV is sorted
+    # by (date, region) — the last row is the smallest-region of the latest
+    # month, not the latest total. Aggregate by the detected date column first.
+    detected_dates = (comprehensive_analysis.get('column_detection', {}).get('dates', [])
+                      if comprehensive_analysis else [])
+    growth_date_col = detected_dates[0] if detected_dates else None
+
+    def _time_first_last(metric_col):
+        """Return (first, last) aggregated by the date column if present;
+        falls back to (iloc[0], iloc[-1]) when there is no time dimension."""
+        try:
+            col = df[metric_col].astype(float).dropna()
+            if len(col) < 2:
+                return (None, None)
+            if growth_date_col and growth_date_col in df.columns:
+                tdf = df[[growth_date_col, metric_col]].dropna()
+                if not tdf.empty:
+                    try:
+                        parsed = pd.to_datetime(tdf[growth_date_col], errors='coerce')
+                        if parsed.notna().mean() >= 0.7:
+                            tdf = tdf.assign(_o=parsed).sort_values('_o')
+                        else:
+                            tdf = tdf.sort_values(growth_date_col)
+                    except Exception:
+                        tdf = tdf.sort_values(growth_date_col)
+                    agg = tdf.groupby(tdf[growth_date_col], sort=False)[metric_col].sum()
+                    if len(agg) >= 2:
+                        return (float(agg.iloc[0]), float(agg.iloc[-1]))
+            # No time column → preserve current behavior
+            return (float(col.iloc[0]), float(col.iloc[-1]))
+        except Exception as e:
+            logger.warning(f"Time-aware first/last failed for {metric_col}: {e}")
+            return (None, None)
+
+    # Growth analysis (time-aware)
     if len(df) >= 2:
-        first_val = revenue_data.iloc[0]
-        last_val = revenue_data.iloc[-1]
-        project["growth_rate"] = ((last_val - first_val) / first_val * 100) if first_val != 0 else 0
-        project["trend"] = "Increasing" if last_val > first_val else "Decreasing"
+        first_val, last_val = _time_first_last(rev_col)
+        if first_val is not None and last_val is not None:
+            project["growth_rate"] = ((last_val - first_val) / first_val * 100) if first_val != 0 else 0
+            project["trend"] = "Increasing" if last_val > first_val else "Decreasing"
     
     # ✅ PHASE B: Build multi-KPI metrics from all detected numeric columns
     kpi_metrics = {}
@@ -523,13 +558,12 @@ def process_dataframe(project, df):
             total = float(col_data.sum())
             avg = float(col_data.mean())
             median = float(col_data.median())
-            
-            # Growth
+
+            # Growth (time-aware — aggregates by date column when present)
             growth = 0.0
             trend = "flat"
-            if len(col_data) >= 2:
-                first = col_data.iloc[0]
-                last = col_data.iloc[-1]
+            first, last = _time_first_last(col_name)
+            if first is not None and last is not None:
                 growth = ((last - first) / first * 100) if first != 0 else 0.0
                 trend = "up" if last > first else "down" if last < first else "flat"
             
