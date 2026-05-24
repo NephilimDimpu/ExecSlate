@@ -80,6 +80,32 @@
         </a>
     </div>
 
+    <!-- ================= ANALYTICS CARRY-OVER BANNER ================= -->
+    {% if analytics_carryover %}
+    <div style="max-width:920px;margin:0 auto 1.25rem;padding:0.95rem 1.2rem;
+                background:linear-gradient(90deg,#ecfdf5 0%,#f0fdf4 100%);
+                border:1px solid #86efac;border-left:4px solid #16a34a;
+                border-radius:10px;display:flex;align-items:flex-start;gap:0.75rem;
+                color:#065f46;font-size:0.9rem;line-height:1.5;">
+        <span style="font-size:1.1rem;">📋</span>
+        <div style="flex:1;">
+            <strong style="display:block;color:#065f46;font-size:0.92rem;margin-bottom:0.2rem;">
+                Analytics draft received
+            </strong>
+            <span style="color:#047857;">
+                {{ analytics_carryover.n_observations }} observation{{ '' if analytics_carryover.n_observations == 1 else 's' }}{% if analytics_carryover.n_pinned %},
+                {{ analytics_carryover.n_pinned }} pinned item{{ '' if analytics_carryover.n_pinned == 1 else 's' }}{% endif %}{% if analytics_carryover.has_notes %},
+                and your notes{% endif %}
+                are pre-filled in the
+                <a href="#workingTheorySection" style="color:#047857;font-weight:600;text-decoration:underline;">
+                    Working Theory section
+                </a>
+                below. Upload your data here to generate the full report with this context.
+            </span>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- ================= ERROR ================= -->
     {% if report.error %}
     <div class="alert error">
@@ -366,7 +392,7 @@
 
 
     <!-- ================= CONSULTANT'S WORKING THEORY (NEW) ================= -->
-    <section class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto; border-left: 4px solid var(--indigo);">
+    <section id="workingTheorySection" class="card" style="max-width: 1280px; margin-left: auto; margin-right: auto; border-left: 4px solid var(--indigo); scroll-margin-top: 80px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <h3 style="margin: 0;">Consultant's Working Theory</h3>
             <span style="font-size: 0.8rem; color: var(--text-tertiary); background: var(--bg-secondary); padding: 0.2rem 0.6rem; border-radius: 1rem;">

@@ -141,6 +141,32 @@
             color: var(--text-muted, #64748b);
         }
         .stat-chip strong { color: var(--text, #1e293b); }
+
+        /* ── Export button group ── */
+        .export-group {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 20px; padding: 0.25rem 0.5rem 0.25rem 0.85rem;
+            margin-left: 0.5rem;
+        }
+        .export-group-label {
+            font-size: 0.78rem; font-weight: 600;
+            color: var(--text-muted, #64748b); margin-right: 0.25rem;
+        }
+        .export-chip {
+            display: inline-block;
+            font-size: 0.72rem; font-weight: 600;
+            padding: 0.22rem 0.55rem; border-radius: 14px;
+            background: transparent; color: var(--text-muted, #64748b);
+            text-decoration: none; border: 1px solid transparent;
+            transition: all 0.15s;
+        }
+        .export-chip:hover {
+            color: var(--accent, #1e40af);
+            border-color: var(--accent, #1e40af);
+            background: rgba(30,64,175,0.05);
+        }
         .re-upload-btn {
             margin-left: auto;
             font-size: 0.78rem;
@@ -403,9 +429,13 @@
         <span class="stat-chip">Growth <strong>{{ "%.1f"|format(session.growth_rate) }}%</strong></span>
         {% endif %}
         <span class="stat-chip">Primary KPI <strong>{{ session.primary_col.replace('_', ' ').title() }}</strong></span>
-        <a href="/analytics/{{ project.id }}/export/pdf" class="re-upload-btn"
-           style="text-decoration:none;color:var(--accent,#1e40af);border-color:var(--accent,#1e40af);"
-           title="Download this analytics view as PDF">Export PDF ↓</a>
+        <div class="export-group" title="Download this analytics view">
+            <span class="export-group-label">Export ↓</span>
+            <a class="export-chip" href="/analytics/{{ project.id }}/export/pdf"  title="PDF brief">PDF</a>
+            <a class="export-chip" href="/analytics/{{ project.id }}/export/pptx" title="PowerPoint deck">PPT</a>
+            <a class="export-chip" href="/analytics/{{ project.id }}/export/docx" title="Word document">Word</a>
+            <a class="export-chip" href="/analytics/{{ project.id }}/export/xlsx" title="Excel workbook">Excel</a>
+        </div>
         <button class="re-upload-btn" onclick="openReupload()">Re-upload data ↑</button>
     </div>
 
