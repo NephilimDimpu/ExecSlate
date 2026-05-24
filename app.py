@@ -1407,13 +1407,19 @@ def report(pid: int, request: Request, user=Depends(require_user)):
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
+    # Pop a one-shot "draft arrived from Analytics" flash, if any
+    carryover = request.session.pop("analytics_carryover", None)
+    if carryover and carryover.get("pid") != pid:
+        carryover = None  # belongs to a different project
+
     return templates.TemplateResponse(request=request, name="report.html", context= {
         "request": request,
         "report": project,
         "user": user,
         "stats": stats,
         "users": users,
-        "PLAN_LIMITS": PLAN_LIMITS
+        "PLAN_LIMITS": PLAN_LIMITS,
+        "analytics_carryover": carryover,
     })
     
 @app.post("/project/create")

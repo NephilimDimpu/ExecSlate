@@ -666,13 +666,21 @@ Base every insight only on the data shape described above. Return exactly 6 bull
         except Exception as e:
             logger.error(f"send-to-report failed: {e}")
 
+        # Flash flag so the Report page can show a "Draft arrived" banner.
+        n_obs = len(insights)
+        n_pinned = len(pinned_lines)
+        request.session["analytics_carryover"] = {
+            "pid": pid,
+            "n_observations": n_obs,
+            "n_pinned": n_pinned,
+            "has_notes": bool(notes and notes.strip()),
+        }
+
         return RedirectResponse(f"/report/{pid}", status_code=303)
 
-    # ── Export the Analytics workspace as a PDF brief ────────────────────────
+    # ── Export the Analytics workspace ───────────────────────────────────────
 
-    @router.get("/analytics/{pid}/export/pdf")
-    def export_analytics_pdf_route(pid: int, request: Request, user=Depends(require_user)):
-        """Generate a PDF brief of the current analytics session."""
+    def _do_analytics_export(pid, request, user, fmt):
         project = _find_project(pid, user)
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
@@ -681,27 +689,65 @@ Base every insight only on the data shape described above. Return exactly 6 bull
         if not session:
             return _flash_error(request, pid, "Upload data first — there is no analytics session to export yet.")
 
-        # Pull the most recent saved draft (notes + pinned) if any
         drafts = _list_drafts(pid, user)
         latest_draft = drafts[0] if drafts else None
-
-        # Import here so the heavy reportlab import is paid only on export
-        from exports.analytics_export import export_analytics_pdf
 
         import re
         safe_client = re.sub(r"[^A-Za-z0-9_-]+", "_", str(project.get("client") or "report")).strip("_") or "report"
         from datetime import datetime as _dt
         ts = _dt.now().strftime("%Y%m%d_%H%M%S")
-        out_path = app_module.EXPORT_DIR / f"{safe_client}_analytics_{ts}.pdf"
 
         try:
-            export_analytics_pdf(project, session, latest_draft, out_path)
+            if fmt == "pdf":
+                from exports.analytics_export import export_analytics_pdf
+                out_path = app_module.EXPORT_DIR / f"{safe_client}_analytics_{ts}.pdf"
+                export_analytics_pdf(project, session, latest_draft, out_path)
+                media = "application/pdf"
+                ext = "pdf"
+            elif fmt == "pptx":
+                from exports.analytics_export import export_analytics_pptx
+                out_path = app_module.EXPORT_DIR / f"{safe_client}_analytics_{ts}.pptx"
+                export_analytics_pptx(project, session, latest_draft, out_path)
+                media = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                ext = "pptx"
+            elif fmt == "docx":
+                from exports.analytics_export import export_analytics_docx
+                out_path = app_module.EXPORT_DIR / f"{safe_client}_analytics_{ts}.docx"
+                export_analytics_docx(project, session, latest_draft, out_path)
+                media = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                ext = "docx"
+            elif fmt == "xlsx":
+                from exports.analytics_export import export_analytics_xlsx
+                out_path = app_module.EXPORT_DIR / f"{safe_client}_analytics_{ts}.xlsx"
+                export_analytics_xlsx(project, session, latest_draft, out_path)
+                media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ext = "xlsx"
+            else:
+                raise HTTPException(status_code=400, detail="Unknown export format")
+        except HTTPException:
+            raise
         except Exception as e:
-            logger.error(f"Analytics PDF export failed: {e}")
-            raise HTTPException(status_code=500, detail=f"Could not generate PDF: {e}")
+            logger.error(f"Analytics {fmt.upper()} export failed: {e}")
+            raise HTTPException(status_code=500, detail=f"Could not generate {fmt.upper()}: {e}")
 
         return FileResponse(
             path=str(out_path),
-            filename=f"{safe_client}_analytics.pdf",
-            media_type="application/pdf",
+            filename=f"{safe_client}_analytics.{ext}",
+            media_type=media,
         )
+
+    @router.get("/analytics/{pid}/export/pdf")
+    def export_analytics_pdf_route(pid: int, request: Request, user=Depends(require_user)):
+        return _do_analytics_export(pid, request, user, "pdf")
+
+    @router.get("/analytics/{pid}/export/pptx")
+    def export_analytics_pptx_route(pid: int, request: Request, user=Depends(require_user)):
+        return _do_analytics_export(pid, request, user, "pptx")
+
+    @router.get("/analytics/{pid}/export/docx")
+    def export_analytics_docx_route(pid: int, request: Request, user=Depends(require_user)):
+        return _do_analytics_export(pid, request, user, "docx")
+
+    @router.get("/analytics/{pid}/export/xlsx")
+    def export_analytics_xlsx_route(pid: int, request: Request, user=Depends(require_user)):
+        return _do_analytics_export(pid, request, user, "xlsx")
