@@ -38,6 +38,14 @@
             <h1>Create Your Business Account</h1>
             <p>Sign up and get unlimited uploads, unlimited AI, all exports — <strong>$99/mo</strong></p>
 
+            {% elif plan == 'founding' %}
+            <!-- Founding Plan Signup -->
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <span class="plan-badge plan-founding" style="font-size: 0.85rem; padding: 6px 16px; background: rgba(0, 200, 150, 0.15); border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; font-weight: bold;">🚀 FOUNDING MEMBER BETA</span>
+            </div>
+            <h1>Join as a Founding Analyst</h1>
+            <p>Get 90 days of unlimited Business tier access completely free, plus 50% off Pro forever. No credit card required.</p>
+
             {% else %}
             <!-- Free Plan Signup (default) -->
             <h1>Create Your Account</h1>
@@ -84,6 +92,11 @@
                 <button type="submit" class="btn-primary large"
                     style="background: linear-gradient(135deg, #7c3aed, #5b21b6);">
                     Create Account & Get Business →
+                </button>
+                {% elif plan == 'founding' %}
+                <button type="submit" class="btn-primary large"
+                    style="background: linear-gradient(135deg, #00c896, #059669);">
+                    Secure Your Founding Spot →
                 </button>
                 {% else %}
                 <button type="submit" class="btn-primary large">Create Free Account</button>

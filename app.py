@@ -115,6 +115,13 @@ PLAN_LIMITS = {
         "max_ai_regens": 0,
         "ppt_export": False
     },
+    "founding": {
+        "max_uploads": None,            # Unlimited during 90-day Beta
+        "max_ai_generations": None,     # Unlimited during 90-day Beta
+        "max_ai_regens": None,          # Unlimited during 90-day Beta
+        "ppt_export": True,
+        "docx_export": True
+    },
     "pro": {
         "max_uploads": 20,              # 20 reports per month
         "max_ai_generations": 10,       # 10 AI-enhanced analyses

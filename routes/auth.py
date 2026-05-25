@@ -122,7 +122,7 @@ def setup(app_module):
             })
 
         # Validate the selected plan
-        valid_plans = ['free', 'pro', 'business']
+        valid_plans = ['free', 'pro', 'business', 'founding']
         if selected_plan not in valid_plans:
             selected_plan = 'free'
 
@@ -149,7 +149,8 @@ def setup(app_module):
             })
 
         password_hash = hash_password(password)
-        user_id = db.create_user(email, password_hash, plan='free', username=username)
+        reg_plan = 'founding' if selected_plan == 'founding' else 'free'
+        user_id = db.create_user(email, password_hash, plan=reg_plan, username=username)
 
         if not user_id:
             return templates.TemplateResponse(request=request, name="register.html", context= {
@@ -161,7 +162,7 @@ def setup(app_module):
             "id": user_id,
             "username": username,
             "email": email,
-            "plan": "free",
+            "plan": reg_plan,
             "is_admin": False
         }
 
