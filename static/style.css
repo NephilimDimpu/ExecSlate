@@ -382,7 +382,7 @@ button[type="submit"] {
   justify-content: center;
   gap: var(--space-2);
   background: var(--accent);
-  color: #ffffff;
+  color: #ffffff !important;
   font-size: var(--font-sm);
   font-weight: 500;
   padding: var(--space-3) var(--space-5);
@@ -400,6 +400,7 @@ button[type="submit"]:hover {
   background: var(--accent-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-accent);
+  color: #ffffff !important;
 }
 
 .btn-primary:active,
@@ -463,7 +464,7 @@ button[type="submit"]:active {
   align-items: center;
   justify-content: center;
   background: var(--accent);
-  color: white;
+  color: #ffffff !important;
   font-size: var(--font-sm);
   font-weight: 500;
   padding: var(--space-3) var(--space-5);
@@ -478,6 +479,7 @@ button[type="submit"]:active {
   background: var(--accent-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-accent);
+  color: #ffffff !important;
 }
 
 .btn-danger {
@@ -485,7 +487,7 @@ button[type="submit"]:active {
   align-items: center;
   justify-content: center;
   background: var(--danger);
-  color: white;
+  color: #ffffff !important;
   font-size: var(--font-sm);
   font-weight: 500;
   padding: var(--space-3) var(--space-5);
@@ -498,6 +500,7 @@ button[type="submit"]:active {
 .btn-danger:hover {
   background: #b91c1c;
   transform: translateY(-1px);
+  color: #ffffff !important;
 }
 
 .btn-disabled {

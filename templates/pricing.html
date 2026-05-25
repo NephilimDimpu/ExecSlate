@@ -68,7 +68,7 @@
           <li class="disabled">AI regenerations</li>
         </ul>
 
-        <a href="/register" class="btn-primary">Start Free</a>
+        <a href="#" class="btn-disabled" style="width: 100%;">Public Registration Closed</a>
 
       </div>
 
@@ -99,12 +99,12 @@
         </ul>
 
         {% if user and user.plan not in ['demo', none] %}
-        <button class="btn-primary" id="upgradePro" onclick="handleUpgrade('pro')">
-          Upgrade to Pro — $49/mo
+        <button class="btn-disabled" disabled style="width: 100%;">
+          Currently in Beta
         </button>
         {% else %}
-        <a href="/register?plan=pro" class="btn-primary" style="display:block; text-align:center;">
-          Upgrade to Pro — $49/mo
+        <a href="#" class="btn-disabled" style="display:block; text-align:center; width: 100%;">
+          Public Registration Closed
         </a>
         {% endif %}
 
@@ -134,12 +134,12 @@
         </ul>
 
         {% if user and user.plan not in ['demo', none] %}
-        <button class="btn-primary" id="upgradeBusiness" onclick="handleUpgrade('business')">
-          Go Business — $99/mo
+        <button class="btn-disabled" disabled style="width: 100%;">
+          Currently in Beta
         </button>
         {% else %}
-        <a href="/register?plan=business" class="btn-primary" style="display:block; text-align:center;">
-          Go Business — $99/mo
+        <a href="#" class="btn-disabled" style="display:block; text-align:center; width: 100%;">
+          Public Registration Closed
         </a>
         {% endif %}
 
