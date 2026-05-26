@@ -22,34 +22,20 @@
     <div class="login-container">
         <div class="login-card fade-in">
 
-            {% if plan == 'pro' %}
-            <!-- Pro Plan Signup -->
-            <div style="text-align: center; margin-bottom: 1.5rem;">
-                <span class="plan-badge plan-pro" style="font-size: 0.85rem; padding: 6px 16px;">⚡ PROFESSIONAL</span>
-            </div>
-            <h1>Create Your Pro Account</h1>
-            <p>Sign up and unlock 20 uploads, 10 AI analyses, PowerPoint exports — <strong>$49/mo</strong></p>
-
-            {% elif plan == 'business' %}
-            <!-- Business Plan Signup -->
-            <div style="text-align: center; margin-bottom: 1.5rem;">
-                <span class="plan-badge plan-business" style="font-size: 0.85rem; padding: 6px 16px;">👑 BUSINESS</span>
-            </div>
-            <h1>Create Your Business Account</h1>
-            <p>Sign up and get unlimited uploads, unlimited AI, all exports — <strong>$99/mo</strong></p>
-
-            {% elif plan == 'founding' %}
+            {% if plan == 'founding' %}
             <!-- Founding Plan Signup -->
             <div style="text-align: center; margin-bottom: 1.5rem;">
                 <span class="plan-badge plan-founding" style="font-size: 0.85rem; padding: 6px 16px; background: rgba(0, 200, 150, 0.15); border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; font-weight: bold;">🚀 FOUNDING MEMBER BETA</span>
             </div>
             <h1>Join as a Founding Analyst</h1>
             <p>Get 90 days of unlimited Business tier access completely free, plus 50% off Pro forever. No credit card required.</p>
-
             {% else %}
-            <!-- Free Plan Signup (default) -->
-            <h1>Create Your Account</h1>
-            <p>Start generating executive reports for free</p>
+            <!-- Locked State -->
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <span class="plan-badge" style="font-size: 0.85rem; padding: 6px 16px; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 4px; font-weight: bold;">🔒 PRIVATE BETA</span>
+            </div>
+            <h1>Public Registrations Closed</h1>
+            <p>ExecSlate is currently in a closed beta exclusively for boutique consulting analysts.</p>
             {% endif %}
 
             {% if error %}
@@ -58,8 +44,9 @@
             </div>
             {% endif %}
 
+            {% if plan == 'founding' %}
             <form method="post" action="/register" class="login-form">
-                <input type="hidden" name="selected_plan" value="{{ plan if plan else 'free' }}">
+                <input type="hidden" name="selected_plan" value="founding">
 
                 <div>
                     <label for="username">Username (Optional)</label>
@@ -83,38 +70,20 @@
                         placeholder="Confirm your password" required minlength="6">
                 </div>
 
-                {% if plan == 'pro' %}
-                <button type="submit" class="btn-primary large"
-                    style="background: linear-gradient(135deg, #d97706, #b45309);">
-                    Create Account & Get Pro →
-                </button>
-                {% elif plan == 'business' %}
-                <button type="submit" class="btn-primary large"
-                    style="background: linear-gradient(135deg, #7c3aed, #5b21b6);">
-                    Create Account & Get Business →
-                </button>
-                {% elif plan == 'founding' %}
                 <button type="submit" class="btn-primary large"
                     style="background: linear-gradient(135deg, #00c896, #059669);">
                     Secure Your Founding Spot →
                 </button>
-                {% else %}
-                <button type="submit" class="btn-primary large">Create Free Account</button>
-                {% endif %}
             </form>
+            {% else %}
+            <div style="text-align: center; margin: 40px 0;">
+                <a href="/pricing" class="btn-primary" style="display: inline-block;">See Beta Requirements</a>
+            </div>
+            {% endif %}
 
             <div class="login-link-row">
                 Already have an account? <a href="/login">Sign In</a>
             </div>
-
-            {% if not plan %}
-            <div class="login-divider">
-                <span>— or —</span>
-                <a href="/demo" class="btn-secondary">
-                    Try Demo Account
-                </a>
-            </div>
-            {% endif %}
 
             <div class="back-link">
                 <a href="/">← Back to Home</a>
