@@ -73,8 +73,10 @@ def setup(app_module):
     @router.get("/register")
     def register_page(request: Request, plan: str = None):
         """Display registration page, optionally with a pre-selected plan"""
-        # Validate plan param
-        valid_plans = ['free', 'pro', 'business']
+        # Valid plans MUST match what the POST handler accepts. 'founding' is
+        # the public beta plan — analysts hitting /register?plan=founding need
+        # the open signup form, not the locked "Private Beta" wall.
+        valid_plans = ['free', 'pro', 'business', 'founding']
         if plan and plan not in valid_plans:
             plan = None
         return templates.TemplateResponse(request=request, name="register.html", context= {
