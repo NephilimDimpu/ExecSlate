@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExecSlate — Sign Up</title>
-    <meta name="description" content="Create your ExecSlate account and start generating executive reports.">
+    <title>ExecSlate — Create Your Free Account</title>
+    <meta name="description" content="Create your free ExecSlate account and start generating executive reports.">
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
     <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
@@ -23,19 +23,17 @@
         <div class="login-card fade-in">
 
             {% if plan == 'founding' %}
-            <!-- Founding Plan Signup -->
             <div style="text-align: center; margin-bottom: 1.5rem;">
-                <span class="plan-badge plan-founding" style="font-size: 0.85rem; padding: 6px 16px; background: rgba(0, 200, 150, 0.15); border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; font-weight: bold;">🚀 FOUNDING MEMBER BETA</span>
+                <span class="plan-badge plan-founding"
+                    style="font-size: 0.85rem; padding: 6px 16px; background: rgba(0, 200, 150, 0.15); border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; font-weight: bold;">🚀
+                    FOUNDING MEMBER</span>
             </div>
             <h1>Join as a Founding Analyst</h1>
-            <p>Get 90 days of unlimited Business tier access completely free, plus 50% off Pro forever. No credit card required.</p>
+            <p>90 days of unlimited Business tier access completely free, plus 50% off Pro forever. No credit card
+                required.</p>
             {% else %}
-            <!-- Locked State -->
-            <div style="text-align: center; margin-bottom: 1.5rem;">
-                <span class="plan-badge" style="font-size: 0.85rem; padding: 6px 16px; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 4px; font-weight: bold;">🔒 PRIVATE BETA</span>
-            </div>
-            <h1>Public Registrations Closed</h1>
-            <p>ExecSlate is currently in a closed beta exclusively for boutique consulting analysts.</p>
+            <h1>Create your free account</h1>
+            <p>Free forever tier — 3 uploads a month, AI insights, PDF &amp; Word exports. No credit card required.</p>
             {% endif %}
 
             {% if error %}
@@ -44,17 +42,17 @@
             </div>
             {% endif %}
 
-            {% if plan == 'founding' %}
             <form method="post" action="/register" class="login-form">
-                <input type="hidden" name="selected_plan" value="founding">
+                <input type="hidden" name="selected_plan" value="{{ plan if plan else 'free' }}">
+                <input type="hidden" name="next" value="{{ next_url if next_url else '' }}">
 
                 <div>
-                    <label for="username">Username (Optional)</label>
+                    <label for="username">Name (Optional)</label>
                     <input type="text" id="username" name="username" placeholder="e.g. John Doe">
                 </div>
 
                 <div>
-                    <label for="email">Work Email</label>
+                    <label for="email">Email</label>
                     <input type="email" id="email" name="email" placeholder="you@company.com" required autofocus>
                 </div>
 
@@ -71,28 +69,22 @@
                 </div>
 
                 <button type="submit" class="btn-primary large"
-                    style="background: linear-gradient(135deg, #00c896, #059669);">
-                    Secure Your Founding Spot →
+                    {% if plan == 'founding' %}style="background: linear-gradient(135deg, #00c896, #059669);"{% endif %}>
+                    {% if plan == 'founding' %}Secure Your Founding Spot →{% else %}Create Free Account →{% endif %}
                 </button>
             </form>
-            {% else %}
-            <div style="text-align: center; margin: 40px 0;">
-                <a href="/pricing" class="btn-primary" style="display: inline-block;">See Beta Requirements</a>
-            </div>
-            {% endif %}
 
             <div class="login-link-row">
                 Already have an account? <a href="/login">Sign In</a>
             </div>
 
             <div class="back-link">
-                <a href="/">← Back to Home</a>
+                <a href="/try">← Back to the app</a>
             </div>
 
         </div>
     </div>
 
-    <!-- Theme Toggle -->
     <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode">
         <span id="themeIcon">🌙</span>
     </button>

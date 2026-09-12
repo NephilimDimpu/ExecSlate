@@ -321,6 +321,11 @@ next_project_id = 3
 analytics_sessions_mem = {}   # {project_id: session_dict}
 analytics_drafts_mem = {}     # {project_id: [draft_dict, ...]}
 
+# Anonymous self-serve funnel (/try): results keyed by a per-browser token.
+# Memory-only and capped in routes/public.py — nothing here is persisted.
+anon_results_mem = {}         # {anon_token: result_dict}
+ANON_FREE_LIMIT = int(os.getenv("ANON_FREE_LIMIT", "10"))
+
 # ==================== HELPER FUNCTIONS ====================
 
 def log(event: str, details: str = ""):
@@ -1292,6 +1297,7 @@ from routes import admin as admin_routes
 from routes import payments as payment_routes
 from routes import agent as agent_routes
 from routes import analytics as analytics_routes
+from routes import public as public_routes
 
 # Wire shared state into route modules
 _this = sys.modules[__name__]
@@ -1301,6 +1307,7 @@ admin_routes.setup(_this)
 payment_routes.setup(_this)
 agent_routes.setup(_this)
 analytics_routes.setup(_this)  # needs: db, templates, require_user, ea, ai_providers
+public_routes.setup(_this)     # anonymous /try funnel — no auth required
 
 # Include routers
 app.include_router(auth_routes.router)
@@ -1309,8 +1316,9 @@ app.include_router(admin_routes.router)
 app.include_router(payment_routes.router)
 app.include_router(agent_routes.router)
 app.include_router(analytics_routes.router)
+app.include_router(public_routes.router)
 
-logger.info("✅ Modular routes loaded: auth, exports, admin, payments, agent, analytics")
+logger.info("✅ Modular routes loaded: auth, exports, admin, payments, agent, analytics, public")
 
 # ==================== MAIN ROUTES ====================
 

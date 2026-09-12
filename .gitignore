@@ -26,6 +26,7 @@ uploads/*
 exports/*.pdf
 exports/*.pptx
 exports/*.docx
+exports/*.xlsx
 static/charts/*
 !static/charts/.gitkeep
 *.db

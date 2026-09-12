@@ -24,7 +24,7 @@
     <div class="pricing-hero">
       <h1>Simple, Honest Pricing</h1>
       <p class="subtitle">
-        Exclusively in Private Beta. No public registrations.
+        Try it free with no signup. Upgrade when it's saving you real hours.
       </p>
 
       <!-- Founding Analyst Banner -->
@@ -68,7 +68,7 @@
           <li class="disabled">AI regenerations</li>
         </ul>
 
-        <a href="#" class="btn-disabled" style="width: 100%;">Public Registration Closed</a>
+        <a href="/try" class="btn-secondary" style="display:block; text-align:center; width: 100%;">Try Free — No Signup</a>
 
       </div>
 
@@ -98,14 +98,12 @@
           <li>Statistical + AI hybrid intelligence</li>
         </ul>
 
-        {% if user and user.plan not in ['demo', none] %}
-        <button class="btn-disabled" disabled style="width: 100%;">
-          Currently in Beta
-        </button>
+        {% if user and user.plan == 'pro' %}
+        <button class="btn-disabled" disabled style="width: 100%;">Your Current Plan</button>
         {% else %}
-        <a href="#" class="btn-disabled" style="display:block; text-align:center; width: 100%;">
-          Public Registration Closed
-        </a>
+        <button class="btn-primary" style="width: 100%;" onclick="handleUpgrade('pro')">
+          Upgrade to Pro →
+        </button>
         {% endif %}
 
       </div>
@@ -133,14 +131,12 @@
           <li>Everything in Pro, uncapped</li>
         </ul>
 
-        {% if user and user.plan not in ['demo', none] %}
-        <button class="btn-disabled" disabled style="width: 100%;">
-          Currently in Beta
-        </button>
+        {% if user and user.plan == 'business' %}
+        <button class="btn-disabled" disabled style="width: 100%;">Your Current Plan</button>
         {% else %}
-        <a href="#" class="btn-disabled" style="display:block; text-align:center; width: 100%;">
-          Public Registration Closed
-        </a>
+        <button class="btn-primary" style="width: 100%;" onclick="handleUpgrade('business')">
+          Upgrade to Business →
+        </button>
         {% endif %}
 
       </div>
