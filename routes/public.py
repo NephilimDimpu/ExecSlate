@@ -4,10 +4,15 @@
 # free account (the natural conversion point), and once the free run-count
 # is exhausted they must register to continue.
 
+import os
 import re
+import json
+import time
 import uuid
 import logging
+import tempfile
 from datetime import datetime
+from pathlib import Path
 from typing import List
 
 from fastapi import APIRouter, Request, UploadFile, File, Form
@@ -18,34 +23,122 @@ import analytics_engine as engine
 router = APIRouter(tags=["public"])
 logger = logging.getLogger("ExecSlate")
 
-# Keep anonymous results in memory only. Each entry holds two base64 charts,
-# so cap the store and evict oldest-first to bound memory on small dynos.
-ANON_MAX_ENTRIES = 50
+
+# ── Anonymous result store ────────────────────────────────────────────────────
+# Results live on the local filesystem, NOT in process memory: production runs
+# `gunicorn -w 2`, so an upload handled by one worker must be readable by
+# whichever worker serves the follow-up GET. Workers share the container disk.
+# Only the derived analysis is kept (never the raw upload), written atomically,
+# and pruned by age and count.
+
+ANON_STORE_DIR = Path(os.getenv("ANON_STORE_DIR") or (Path(tempfile.gettempdir()) / "execslate_anon"))
+ANON_MAX_ENTRIES = 200
+ANON_TTL_SECONDS = 24 * 3600
+_TOKEN_RE = re.compile(r"^[0-9a-f]{32}$")
+
+
+def _path_for(token):
+    # Token comes from a signed cookie, but validate anyway — it becomes a filename.
+    if not token or not _TOKEN_RE.match(token):
+        return None
+    return ANON_STORE_DIR / f"{token}.json"
+
+
+def _json_default(o):
+    # numpy scalars -> native Python numbers so templates can still format them
+    if hasattr(o, "item"):
+        return o.item()
+    return str(o)
+
+
+def load_result(token):
+    p = _path_for(token)
+    if not p or not p.exists():
+        return None
+    try:
+        if time.time() - p.stat().st_mtime > ANON_TTL_SECONDS:
+            p.unlink(missing_ok=True)
+            return None
+        with p.open("r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception as e:
+        logger.warning(f"Could not load anonymous result: {e}")
+        return None
+
+
+def save_result(token, result):
+    p = _path_for(token)
+    if not p:
+        return
+    ANON_STORE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_name(f"{token}.{uuid.uuid4().hex}.tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        json.dump(result, fh, default=_json_default)
+    os.replace(tmp, p)  # atomic: a reader never sees a half-written file
+    _prune()
+
+
+def delete_result(token):
+    p = _path_for(token)
+    if p:
+        try:
+            p.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
+def _prune():
+    now = time.time()
+    try:
+        # Orphaned temp files from interrupted writes
+        for t in ANON_STORE_DIR.glob("*.tmp"):
+            try:
+                if now - t.stat().st_mtime > 3600:
+                    t.unlink(missing_ok=True)
+            except Exception:
+                pass
+        files = []
+        for f in ANON_STORE_DIR.glob("*.json"):
+            try:
+                files.append((f.stat().st_mtime, f))
+            except Exception:
+                pass
+    except Exception:
+        return
+
+    files.sort(key=lambda x: x[0])
+    live = []
+    for mtime, f in files:
+        if now - mtime > ANON_TTL_SECONDS:
+            try:
+                f.unlink(missing_ok=True)
+            except Exception:
+                pass
+        else:
+            live.append(f)
+    for f in live[:max(0, len(live) - ANON_MAX_ENTRIES)]:
+        try:
+            f.unlink(missing_ok=True)
+        except Exception:
+            pass
 
 
 def setup(app_module):
     templates = app_module.templates
-    anon_results = app_module.anon_results_mem
     ANON_FREE_LIMIT = app_module.ANON_FREE_LIMIT
 
     def _anon_token(request: Request) -> str:
         tok = request.session.get("anon_token")
-        if not tok:
+        if not tok or not _TOKEN_RE.match(tok):
             tok = uuid.uuid4().hex
             request.session["anon_token"] = tok
         return tok
 
     def _uses(request: Request) -> int:
-        return int(request.session.get("anon_uses", 0))
-
-    def _store_result(tok: str, result: dict):
-        # Evict oldest entries if we're at the cap
-        while len(anon_results) >= ANON_MAX_ENTRIES:
-            try:
-                anon_results.pop(next(iter(anon_results)))
-            except StopIteration:
-                break
-        anon_results[tok] = result
+        try:
+            return int(request.session.get("anon_uses", 0))
+        except (TypeError, ValueError):
+            return 0
 
     def _flash(request: Request, msg: str):
         request.session["try_error"] = msg
@@ -56,8 +149,7 @@ def setup(app_module):
     @router.get("/try")
     def try_page(request: Request):
         user = request.session.get("user")
-        tok = request.session.get("anon_token")
-        result = anon_results.get(tok) if tok else None
+        result = load_result(request.session.get("anon_token"))
         used = _uses(request)
 
         return templates.TemplateResponse(
@@ -103,13 +195,20 @@ def setup(app_module):
         if err:
             return _flash(request, err)
 
-        result, err = engine.analyze_dataframe(df, currency)
+        # Statistical insights only: /try is unauthenticated and un-metered for
+        # AI, so AI here would let anonymous traffic spend paid API credits.
+        result, err = engine.analyze_dataframe(df, currency, use_ai=False)
         if err:
             return _flash(request, err)
 
         tok = _anon_token(request)
-        _store_result(tok, result)
+        try:
+            save_result(tok, result)
+        except Exception as e:
+            logger.error(f"Could not store anonymous result: {e}")
+            return _flash(request, "Your analysis ran but couldn't be saved. Please try again.")
 
+        # Only count runs that actually produced a viewable result
         if not user:
             request.session["anon_uses"] = used + 1
 
@@ -128,13 +227,19 @@ def setup(app_module):
             )
             return RedirectResponse("/register?next=/try", status_code=303)
 
-        tok = request.session.get("anon_token")
-        result = anon_results.get(tok) if tok else None
+        result = load_result(request.session.get("anon_token"))
         if not result:
             return _flash(request, "Upload a file first — there's nothing to export yet.")
 
-        if fmt not in ("pdf", "pptx", "docx", "xlsx"):
+        exporters = {
+            "pdf":  ("export_analytics_pdf",  "application/pdf"),
+            "pptx": ("export_analytics_pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+            "docx": ("export_analytics_docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            "xlsx": ("export_analytics_xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        }
+        if fmt not in exporters:
             return _flash(request, "Unknown export format.")
+        fn_name, media = exporters[fmt]
 
         project = {
             "client": "ExecSlate Analysis",
@@ -143,23 +248,11 @@ def setup(app_module):
         }
 
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = app_module.EXPORT_DIR / f"execslate_analysis_{ts}.{fmt}"
+        out_path = app_module.EXPORT_DIR / f"execslate_analysis_{ts}_{uuid.uuid4().hex[:6]}.{fmt}"
 
         try:
-            if fmt == "pdf":
-                from exports.analytics_export import export_analytics_pdf as fn
-                media = "application/pdf"
-            elif fmt == "pptx":
-                from exports.analytics_export import export_analytics_pptx as fn
-                media = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-            elif fmt == "docx":
-                from exports.analytics_export import export_analytics_docx as fn
-                media = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            else:
-                from exports.analytics_export import export_analytics_xlsx as fn
-                media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-
-            fn(project, result, None, out_path)
+            import exports.analytics_export as exporter
+            getattr(exporter, fn_name)(project, result, None, out_path)
         except Exception as e:
             logger.error(f"Public {fmt} export failed: {e}")
             return _flash(request, f"Could not generate the {fmt.upper()} file. Please try again.")
@@ -174,7 +267,5 @@ def setup(app_module):
 
     @router.post("/try/reset")
     def try_reset(request: Request):
-        tok = request.session.get("anon_token")
-        if tok:
-            anon_results.pop(tok, None)
+        delete_result(request.session.get("anon_token"))
         return RedirectResponse("/try", status_code=303)
