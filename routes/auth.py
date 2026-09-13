@@ -75,7 +75,8 @@ def setup(app_module):
         """Display registration page, optionally with a pre-selected plan.
         `next` lets the public /try funnel send people here and bounce them
         back to their in-progress analysis after signup."""
-        # Must match the POST handler's list — 'founding' is a real plan.
+        # Valid plans MUST match what the POST handler accepts — 'founding'
+        # is a real plan, so /register?plan=founding must render its form.
         valid_plans = ['free', 'pro', 'business', 'founding']
         if plan and plan not in valid_plans:
             plan = None
