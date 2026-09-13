@@ -71,17 +71,21 @@ def setup(app_module):
     # ── Register ──
 
     @router.get("/register")
-    def register_page(request: Request, plan: str = None):
-        """Display registration page, optionally with a pre-selected plan"""
-        # Valid plans MUST match what the POST handler accepts. 'founding' is
-        # the public beta plan — analysts hitting /register?plan=founding need
-        # the open signup form, not the locked "Private Beta" wall.
+    def register_page(request: Request, plan: str = None, next: str = None):
+        """Display registration page, optionally with a pre-selected plan.
+        `next` lets the public /try funnel send people here and bounce them
+        back to their in-progress analysis after signup."""
+        # Valid plans MUST match what the POST handler accepts — 'founding'
+        # is a real plan, so /register?plan=founding must render its form.
         valid_plans = ['free', 'pro', 'business', 'founding']
         if plan and plan not in valid_plans:
             plan = None
+        # Only allow same-site relative redirects
+        safe_next = next if (next and next.startswith("/") and not next.startswith("//")) else None
         return templates.TemplateResponse(request=request, name="register.html", context= {
             "request": request,
-            "plan": plan
+            "plan": plan,
+            "next_url": safe_next,
         })
 
     @router.post("/register")
@@ -92,7 +96,8 @@ def setup(app_module):
         email: str = Form(...),
         password: str = Form(...),
         confirm_password: str = Form(...),
-        selected_plan: str = Form('free')
+        selected_plan: str = Form('free'),
+        next: str = Form(None)
     ):
         email = email.lower().strip()
         username = username.strip() if username else ""
@@ -179,6 +184,10 @@ def setup(app_module):
         # If they selected a paid plan, redirect to pricing to complete payment
         if selected_plan in ('pro', 'business'):
             return RedirectResponse("/pricing", status_code=303)
+
+        # Came from the public /try funnel → send them back to their analysis
+        if next and next.startswith("/") and not next.startswith("//"):
+            return RedirectResponse(next, status_code=303)
 
         return RedirectResponse("/", status_code=303)
 
