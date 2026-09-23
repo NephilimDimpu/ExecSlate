@@ -50,6 +50,9 @@ import database as db
 # Import enhanced analysis module
 import enhanced_analysis as ea
 
+# Rule-based project monitoring for the dashboard ("what changed", next action)
+import monitor
+
 # Import export functions
 from exports.export_functions import export_pdf_enhanced, export_ppt_enhanced
 
@@ -1321,6 +1324,30 @@ logger.info("✅ Modular routes loaded: auth, exports, admin, payments, agent, a
 
 # ==================== MAIN ROUTES ====================
 
+def build_monitor_items(user_session, project_list, cap=40):
+    """Attach a status line + recommended action to each project.
+
+    Reads the stored analysis history — nothing is re-uploaded or re-analysed.
+    Registered users read from the DB; admin/demo accounts from the in-memory
+    store, which keeps only the latest run (so they show as a baseline).
+    """
+    is_db_user = "id" in user_session
+    items = []
+    for p in (project_list or [])[:cap]:
+        pid = p.get("id")
+        sessions = []
+        try:
+            if is_db_user:
+                sessions = db.get_analytics_session_history(pid)
+            else:
+                latest = analytics_sessions_mem.get(pid)
+                sessions = [latest] if latest else []
+        except Exception as e:
+            logger.warning(f"Monitor: could not load history for project {pid}: {e}")
+        items.append(monitor.project_status(p, sessions))
+    return items
+
+
 @app.get("/")
 async def index(request: Request):
     """
@@ -1342,6 +1369,9 @@ async def index(request: Request):
         # Get projects from DB
         user_projects = db.get_user_projects(user_session["id"])
         
+        # What changed since the previous upload, per project
+        monitor_items = build_monitor_items(user_session, user_projects)
+
         # Prepare context with DB data
         context = {
             "request": request,
@@ -1353,7 +1383,9 @@ async def index(request: Request):
                 "ai_regens_used": db_user["ai_regens"]
             },
             "PLAN_LIMITS": PLAN_LIMITS,
-            "is_demo": False
+            "is_demo": False,
+            "monitor_by_id": {it["id"]: it for it in monitor_items},
+            "portfolio_line": monitor.portfolio_summary(monitor_items),
         }
         return templates.TemplateResponse(request=request, name="dashboard.html", context= context)
         
@@ -1369,6 +1401,8 @@ async def index(request: Request):
         # Note: older code might use list or dict for projects, adapting to list search
         user_projects_list = [p for p in projects if p.get("user_email") == email]
         
+        monitor_items = build_monitor_items(user_session, user_projects_list)
+
         context = {
             "request": request,
             "user": user_session,
@@ -1379,7 +1413,9 @@ async def index(request: Request):
                 "ai_regens_used": demo_user["ai_regens_used"]
             },
             "PLAN_LIMITS": PLAN_LIMITS,
-            "is_demo": True
+            "is_demo": True,
+            "monitor_by_id": {it["id"]: it for it in monitor_items},
+            "portfolio_line": monitor.portfolio_summary(monitor_items),
         }
         return templates.TemplateResponse(request=request, name="dashboard.html", context= context)
 

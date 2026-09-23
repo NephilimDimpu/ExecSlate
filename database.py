@@ -423,6 +423,52 @@ def get_latest_analytics_session(project_id):
             "created_at": s.created_at.isoformat() if s.created_at else None,
         }
 
+def get_analytics_session_history(project_id, limit=6):
+    """Recent runs for one project, newest first — for the monitoring dashboard.
+
+    Deliberately excludes the base64 chart blobs so the dashboard can load the
+    history of many projects without pulling megabytes of images.
+    Ordered by id as well as date because SQLite timestamps have one-second
+    resolution and two uploads can land in the same second.
+    """
+    with SessionLocal() as db_session:
+        rows = (
+            db_session.query(
+                AnalyticsSession.id,
+                AnalyticsSession.created_at,
+                AnalyticsSession.currency,
+                AnalyticsSession.row_count,
+                AnalyticsSession.confidence,
+                AnalyticsSession.trend,
+                AnalyticsSession.growth_rate,
+                AnalyticsSession.primary_col,
+                AnalyticsSession.kpi_metrics,
+            )
+            .filter(AnalyticsSession.project_id == project_id)
+            .order_by(AnalyticsSession.created_at.desc(), AnalyticsSession.id.desc())
+            .limit(limit)
+            .all()
+        )
+        history = []
+        for r in rows:
+            try:
+                kpis = json.loads(r.kpi_metrics) if r.kpi_metrics else {}
+            except (ValueError, TypeError):
+                kpis = {}
+            history.append({
+                "id": r.id,
+                "project_id": project_id,
+                "currency": r.currency,
+                "row_count": r.row_count,
+                "confidence": r.confidence,
+                "trend": r.trend,
+                "growth_rate": r.growth_rate,
+                "primary_col": r.primary_col,
+                "kpi_metrics": kpis,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            })
+        return history
+
 # ==================== ANALYTICS DRAFT OPERATIONS ====================
 
 def create_analytics_draft(project_id, name, kpi_snapshot, selected_insights, notes):

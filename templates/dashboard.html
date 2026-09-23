@@ -16,6 +16,39 @@
             document.documentElement.setAttribute('data-theme', 'dark');
         }
     </script>
+    <style>
+        /* ── Portfolio monitor ── */
+        .portfolio-line {
+            max-width: 1280px; margin: 0 auto 1.25rem; padding: 0.9rem 1.15rem;
+            background: var(--bg-card, #f8fafc);
+            border: 1px solid var(--border, #e2e8f0);
+            border-left: 4px solid var(--accent, #1e40af);
+            border-radius: 10px; font-size: 0.92rem; line-height: 1.5;
+            color: var(--text, #1e293b);
+        }
+        .portfolio-line strong { font-weight: 700; }
+        .monitor-row {
+            display: flex; align-items: flex-start; gap: 0.5rem;
+            margin-top: 0.6rem; padding-top: 0.6rem;
+            border-top: 1px dashed var(--border, #e2e8f0);
+        }
+        .monitor-action {
+            flex-shrink: 0; font-size: 0.68rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            padding: 0.18rem 0.45rem; border-radius: 4px; white-space: nowrap;
+        }
+        .action-proceed          { background: rgba(22,163,74,0.12);  color: #15803d; }
+        .action-review           { background: rgba(220,38,38,0.12);   color: #b91c1c; }
+        .action-needs-fresh-data { background: rgba(245,158,11,0.14);  color: #b45309; }
+        .action-baseline-set     { background: rgba(30,64,175,0.12);   color: #1e40af; }
+        .action-awaiting-data    { background: rgba(100,116,139,0.14); color: #475569; }
+        .monitor-headline {
+            font-size: 0.82rem; line-height: 1.45; color: var(--text, #1e293b);
+        }
+        .monitor-details {
+            font-size: 0.74rem; color: var(--text-muted, #64748b); margin-top: 0.3rem;
+        }
+    </style>
 </head>
 
 <body>
@@ -299,12 +332,21 @@
         </section>
 
 
+        <!-- ================= PORTFOLIO SUMMARY ================= -->
+        {% if projects and portfolio_line %}
+        <div class="portfolio-line">
+            <strong>Where things stand:</strong> {{ portfolio_line }}
+        </div>
+        {% endif %}
+
+
         <!-- ================= PROJECT GRID ================= -->
         {% if projects %}
 
         <section class="project-grid stagger-children">
 
             {% for project in projects %}
+            {% set st = monitor_by_id.get(project.id) if monitor_by_id else None %}
 
             <div class="project-card elevate-on-hover" style="cursor:default;">
 
@@ -324,6 +366,18 @@
                         </div>
 
                     </div>
+
+                    {% if st %}
+                    <div class="monitor-row">
+                        <span class="monitor-action action-{{ st.action | lower | replace(' ', '-') }}">{{ st.action }}</span>
+                        <span>
+                            <span class="monitor-headline">{{ st.headline }}</span>
+                            {% if st.details %}
+                            <span class="monitor-details">{{ st.details | join(' · ') }}</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
                 </a>
 
                 <div class="project-footer" style="gap:0.5rem;">
