@@ -4,12 +4,19 @@ echo Starting ExecSlate Application
 echo ========================================
 echo.
 
-cd /d C:\ExecSlate
+cd /d %~dp0
 
-REM ── Razorpay Payment Keys (get from https://dashboard.razorpay.com/app/keys) ──
-REM Replace these with your actual keys:
-set RAZORPAY_KEY_ID="rzp_test_SLKIYez2nFSNzJ"
-set RAZORPAY_KEY_SECRET="NBiKtxOmrEBp3G0Q1UN4qOOg"
+REM ── Configuration ──────────────────────────────────────────────────────────
+REM Secrets are NOT stored in this file. Put them in a local .env file, which
+REM is git-ignored, and they will be picked up automatically:
+REM
+REM   RAZORPAY_KEY_ID=...        from https://dashboard.razorpay.com/app/keys
+REM   RAZORPAY_KEY_SECRET=...
+REM   OPENAI_API_KEY=...         any one AI provider is enough; without any,
+REM   GEMINI_API_KEY=...         ExecSlate falls back to statistical insights
+REM   SESSION_SECRET=...         required when ENV=production
+REM
+REM See README.md for the full list.
 
 echo Checking Python installation...
 python --version
@@ -26,4 +33,3 @@ echo.
 
 python app.py
 pause
-

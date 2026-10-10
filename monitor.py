@@ -9,7 +9,7 @@ be pointed at and explained. AI may later be used to reword these sentences,
 but it must never decide the label.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 # ── Rules (the whole policy lives here) ──────────────────────────────────────
 STALE_DAYS = 60      # no new upload for this long -> ask for fresh data
@@ -38,7 +38,8 @@ def _days_since(value, now=None):
     dt = _parse_dt(value)
     if not dt:
         return None
-    now = now or datetime.utcnow()
+    # Stored timestamps are naive UTC (SQLite/Postgres now()), so compare in UTC.
+    now = now or datetime.now(timezone.utc).replace(tzinfo=None)
     return max(0, (now - dt).days)
 
 
